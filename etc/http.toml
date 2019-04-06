@@ -6,17 +6,13 @@ time_tick = 1              ## 故障检测的时间间隔，单位为秒
      filter = []           ## 只订阅这里添加的表，空[]表示全部，如 ["wordpress.wp_comments","seals.*"]
                            ## 为数组，结构为 ["库.表"]，支持正则
      nodes  = [            ## 所有的广播节点
-        [
-            "http://127.0.0.1:8080/index.php",
-        ]
+       "http://127.0.0.1:8080/index.php",
      ]
 
   [groups.2]
     name = "group2"
     filter = []
     nodes = [
-      [
-        "http://127.0.0.1:8080/index.php",
-        "http://127.0.0.1:8080/index.php",
-      ]
-  ]
+      "http://127.0.0.1:8080/index.php",
+      "http://127.0.0.1:8080/index.php",
+    ]

@@ -9,7 +9,4 @@
 log_level = 5
 time_zone = "Local"
 
-[pprof]
-enable = true
-listen = "0.0.0.0"
-port = 6060
+pprof_listen = "0.0.0.0:5050"

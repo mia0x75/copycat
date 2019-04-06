@@ -1,5 +1,4 @@
-host             = "127.0.0.1"
-port             = 3306
+addr             = "127.0.0.1:3306"
 user             = "replicate"
 password         = "123456"
 charset          = "utf8mb4"
