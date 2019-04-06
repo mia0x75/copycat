@@ -1,19 +1,22 @@
 enable = true              ## 是否启用http服务
 time_tick = 1              ## 故障检测的时间间隔，单位为秒
 [groups]                   ## 配置文件里面的groups不可以改变
-    [groups.g1]            ## 这里的g1可以使任意的 "字符串"
-     filter = []    ## 只订阅这里添加的表，空[]表示全部，如 ["wordpress.wp_comments","seals.*"]
+  [groups.1]               ## 这里的g1可以使任意的 "字符串"
+     name = "group1"       ##
+     filter = []           ## 只订阅这里添加的表，空[]表示全部，如 ["wordpress.wp_comments","seals.*"]
                            ## 为数组，结构为 ["库.表"]，支持正则
      nodes  = [            ## 所有的广播节点
         [
-            "http://127.0.0.1:8080/index.php"
+            "http://127.0.0.1:8080/index.php",
         ]
      ]
 
-     [groups.g2]           ## 这里的g2可以使任意的 "字符串"
-      filter = [] ## 只关注seals库下面的表，或者留空[]，关注全部，空必须写成[]
-      nodes = [
-         [
-            "http://127.0.0.1:8080/index.php"
-         ]
+  [groups.2]
+    name = "group2"
+    filter = []
+    nodes = [
+      [
+        "http://127.0.0.1:8080/index.php",
+        "http://127.0.0.1:8080/index.php",
       ]
+  ]

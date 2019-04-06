@@ -1,12 +1,7 @@
 package string
 
 import (
-	//"fmt"
-	//"reflect"
 	"strconv"
-	//"fmt"
-	_ "fmt"
-	_ "reflect"
 )
 
 type WString struct {
@@ -20,16 +15,16 @@ type WString struct {
 func (str *WString) ToString() string {
 	//fmt.Println("type======", str.Str, "=>", reflect.TypeOf(str.Str))
 	switch str.Str.(type) {
-		case string:
-			return string(str.Str.(string))
-		case []uint8:
-			return string(str.Str.([]byte))
-		case int:
-			return strconv.Itoa(int(str.Str.(int)))
-		case int64:
-			return strconv.FormatInt(int64(str.Str.(int64)), 10)
-		case uint:
-			return strconv.Itoa(int(str.Str.(uint)))
+	case string:
+		return string(str.Str.(string))
+	case []uint8:
+		return string(str.Str.([]byte))
+	case int:
+		return strconv.Itoa(int(str.Str.(int)))
+	case int64:
+		return strconv.FormatInt(int64(str.Str.(int64)), 10)
+	case uint:
+		return strconv.Itoa(int(str.Str.(uint)))
 	}
 	return ""
 }

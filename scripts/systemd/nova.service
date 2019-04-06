@@ -1,0 +1,18 @@
+[Unit]
+Description=nova Service for MariaDB
+After=network.target
+After=syslog.target
+
+[Service]
+Type=simple
+
+User=root
+Group=root
+
+PIDFile=/run/nova/nova.pid
+ExecStart=/usr/bin/nova
+ExecStop=/usr/bin/nova -stop
+ExecReload=/usr/bin/nova -service-reload all
+
+[Install]
+WantedBy=multi-user.target

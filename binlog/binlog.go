@@ -1,139 +1,260 @@
 package binlog
 
 import (
-	"github.com/siddontang/go-mysql/canal"
+	"sync"
+	"sync/atomic"
+	"time"
+
 	"github.com/siddontang/go-mysql/mysql"
-	"os"
-	"fmt"
 	log "github.com/sirupsen/logrus"
-	"github.com/mia0x75/centineld/file"
-	"github.com/mia0x75/centineld/services"
-	"context"
+
+	"github.com/mia0x75/nova/app"
+	"github.com/mia0x75/nova/services"
 )
 
-func NewBinlog() *Binlog {
-	config, _ := GetMysqlConfig()
-	binlog := &Binlog {
-		Config:config,
+func NewBinlog(ctx *app.Context) *Binlog {
+	binlog := &Binlog{
+		Config:           ctx.MysqlConfig,                   //
+		wg:               new(sync.WaitGroup),               //
+		lock:             new(sync.Mutex),                   //
+		statusLock:       new(sync.Mutex),                   //
+		ctx:              ctx,                               //
+		services:         make(map[string]services.Service), //
+		ServiceIp:        ctx.TcpConfig.ServiceIp,           //
+		ServicePort:      ctx.TcpConfig.Port,                //
+		startServiceChan: make(chan struct{}, 100),          //
+		stopServiceChan:  make(chan bool, 100),              //
+		status:           0,                                 //
 	}
-	
-	cfg := canal.NewDefaultConfig()
-	cfg.Addr = fmt.Sprintf("%s:%d", config.Host, config.Port)
-	cfg.User = config.User
-	cfg.Password = config.Password
-	cfg.Flavor = config.Flavor
-
-	cfg.ReadTimeout = config.ReadTimeout
-	cfg.HeartbeatPeriod = config.HeartbeatPeriod
-	cfg.ServerID = config.ServerID
-	cfg.Charset = config.Charset
-	
-	var err error
-	binlog.handler, err = canal.NewCanal(cfg)
-	if err != nil {
-		log.Panicf("Binlog::NewBinlog - binlog创建canal错误：%+v", err)
-		os.Exit(1)
-	}
-	f, p, index := binlog.BinlogHandler.getBinlogPositionCache()
-	var b [defaultBufSize]byte
-	binlog.BinlogHandler = binlogHandler{
-		Event_index: index,
-		services:make(map[string]services.Service),
-		services_count:0,
-	}
-	binlog.BinlogHandler.buf = b[:0]
-	binlog.handler.SetEventHandler(&binlog.BinlogHandler)
-	binlog.is_connected = false
-	current_pos, err:= binlog.handler.GetMasterPos()
-	if f != "" {
-		binlog.Config.BinFile = f
-	} else {
-		if err != nil {
-			log.Panicf("binlog获取GetMasterPos错误：%+v", err)
-		} else {
-			binlog.Config.BinFile = current_pos.Name
-		}
-	}
-	if p > 0 {
-		binlog.Config.BinPos = p
-	} else {
-		if err != nil {
-			log.Panicf("binlog获取GetMasterPos错误：%+v", err)
-		} else {
-			binlog.Config.BinPos = int64(current_pos.Pos)
-		}
-	}
-	log.Debugf("Binlog::NewBinlog - %+v", binlog.Config)
-
-	// 初始化缓存文件句柄
-	mysql_binlog_position_cache := "/run/centineld/centineld.cache"
-	dir := file.WPath{mysql_binlog_position_cache}
-	dir = file.WPath{dir.GetParent()}
-	dir.Mkdir()
-	flag := os.O_WRONLY | os.O_CREATE | os.O_SYNC | os.O_TRUNC
-	binlog.BinlogHandler.cacheHandler, err = os.OpenFile(
-		mysql_binlog_position_cache, flag , 0755)
-	if err != nil {
-		log.Panicf("binlog服务，打开缓存文件错误：%s, %+v", mysql_binlog_position_cache, err)
-	}
+	binlog.consulInit()
+	binlog.handlerInit()
+	binlog.lookService()
+	go binlog.reloadService()
+	go binlog.showMembersService()
 	return binlog
 }
 
-func (h *Binlog) Close() {
-	log.Debug("binlog服务退出...")
-	if !h.is_connected  {
-		return
+func (h *Binlog) showMembersService() {
+	for {
+		select {
+		case _, ok := <-h.ctx.ShowMembersChan:
+			if !ok {
+				return
+			}
+			if len(h.ctx.ShowMembersRes) < cap(h.ctx.ShowMembersRes) {
+				members := h.ShowMembers()
+				h.ctx.ShowMembersRes <- members
+			}
+		case <-h.ctx.Ctx.Done():
+			return
+		}
 	}
-	h.is_connected = false
-	for _, service := range h.BinlogHandler.services {
-		log.Debug("服务退出...")
-		service.Close()
-	}
-	log.Debug("binlog-服务Close-all退出...")
-	h.BinlogHandler.cacheHandler.Close()
-	log.Debug("binlog-h.BinlogHandler.cacheHandler.Close退出...")
-	h.handler.Close()
-	log.Debug("binlog-h.handler.Close退出...")
 }
 
-
-func (h *Binlog) Start(ctx *context.Context) {
-	h.ctx = ctx
-	for _, service := range h.BinlogHandler.services {
-		service.Start()
-		service.SetContext(ctx)
-	}
-	log.Debugf("Binlog::Start - binlog调试：%s,%d", h.Config.BinFile, uint32(h.Config.BinPos))
-	go func() {
-		startPos := mysql.Position{
-			Name: h.Config.BinFile,
-			Pos:  uint32(h.Config.BinPos),
-		}
-		h.is_connected = true
-		err := h.handler.RunFrom(startPos)
-		if err != nil {
-			log.Fatalf("Binlog::Start - binlog服务：start canal err %v", err)
+func (h *Binlog) reloadService() {
+	for {
+		select {
+		case _, ok := <-h.ctx.ReloadDone():
+			if !ok {
+				return
+			}
+			h.Reload()
+		case <-h.ctx.Ctx.Done():
 			return
+		}
+	}
+}
+
+func (h *Binlog) Close() {
+	h.statusLock.Lock()
+	if h.status&_binlogIsExit > 0 {
+		h.statusLock.Unlock()
+		return
+	}
+	h.status |= _binlogIsExit
+	h.statusLock.Unlock()
+	log.Warn("binlog service exit")
+	h.StopService(true)
+	for name, service := range h.services {
+		log.Debugf("%s service exit", name)
+		service.Close()
+	}
+	h.closeConsul()
+	h.agent.ServiceDeregister(h.sessionId)
+	h.wg.Wait()
+}
+
+func (h *Binlog) lookService() {
+	h.wg.Add(2)
+	go func() {
+		defer h.wg.Done()
+		for {
+			select {
+			case _, ok := <-h.startServiceChan:
+				if !ok {
+					return
+				}
+				for {
+					h.statusLock.Lock()
+					if h.status&_binlogIsRunning > 0 {
+						h.statusLock.Unlock()
+						break
+					}
+					h.status |= _binlogIsRunning
+					h.statusLock.Unlock()
+					log.Debug("binlog service start")
+					go func() {
+						for {
+							if h.lastBinFile == "" {
+								log.Warn("binlog lastBinFile is empty, wait for init")
+								time.Sleep(time.Second)
+								continue
+							}
+							break
+						}
+						startPos := mysql.Position{
+							Name: h.lastBinFile,
+							Pos:  h.lastPos,
+						}
+						for {
+							if h.handler == nil {
+								log.Warn("binlog handler is nil, wait for init")
+								time.Sleep(time.Second)
+								continue
+							}
+							break
+						}
+						err := h.handler.RunFrom(startPos)
+						if err != nil {
+							log.Warnf("binlog service exit with error: %+v", err)
+							h.statusLock.Lock()
+							h.status ^= _binlogIsRunning
+							h.statusLock.Unlock()
+							return
+						}
+					}()
+					break
+				}
+			case <-h.ctx.Ctx.Done():
+				return
+			}
+		}
+	}()
+	go func() {
+		defer h.wg.Done()
+		for {
+			select {
+			case exit, ok := <-h.stopServiceChan:
+				if !ok {
+					return
+				}
+				h.statusLock.Lock()
+				if h.status&_binlogIsRunning > 0 && !exit {
+					h.statusLock.Unlock()
+					log.Debug("binlog service stop")
+					h.handler.Close()
+					h.setHandler()
+				} else {
+					h.statusLock.Unlock()
+				}
+				if exit {
+					r := packPos(h.lastBinFile, int64(h.lastPos), atomic.LoadInt64(&h.EventIndex))
+					h.SaveBinlogPositionCache(r)
+					h.statusLock.Lock()
+					if h.status&_cacheHandlerIsOpened > 0 {
+						h.status ^= _cacheHandlerIsOpened
+						h.statusLock.Unlock()
+						h.cacheHandler.Close()
+					} else {
+						h.statusLock.Unlock()
+					}
+				}
+				h.statusLock.Lock()
+				if h.status&_binlogIsRunning > 0 {
+					h.status ^= _binlogIsRunning
+				}
+				h.statusLock.Unlock()
+			case <-h.ctx.Ctx.Done():
+				return
+			}
 		}
 	}()
 }
 
-func (h *Binlog) Reload(service string) {
-	var (
-		tcp = "tcp"
-		http = "http"
-		all = "all"
-	)
-	switch service {
-	case tcp:
-		log.Debugf("重新加载tcp服务")
-		h.BinlogHandler.services["tcp"].Reload()
-	case http:
-		log.Debugf("重新加载http服务")
-		h.BinlogHandler.services["http"].Reload()
-	case all:
-		log.Debugf("重新加载全部服务")
-		h.BinlogHandler.services["tcp"].Reload()
-		h.BinlogHandler.services["http"].Reload()
+func (h *Binlog) StopService(exit bool) {
+	h.stopServiceChan <- exit
+	if !exit {
+		h.agentStart()
+	}
+}
+
+func (h *Binlog) StartService() {
+	h.startServiceChan <- struct{}{}
+	for _, s := range h.services {
+		s.AgentStop()
+	}
+}
+
+func (h *Binlog) Start() {
+	log.Debugf("===========binlog service start===========")
+	for _, service := range h.services {
+		service.Start()
+	}
+	h.statusLock.Lock()
+	if h.status&_enableConsul <= 0 {
+		h.statusLock.Unlock()
+		log.Debugf("is not enable consul")
+		h.StartService()
+		return
+	}
+	h.statusLock.Unlock()
+	go func() {
+		for {
+			h.statusLock.Lock()
+			if h.status&_binlogIsExit > 0 {
+				h.statusLock.Unlock()
+				return
+			}
+			h.statusLock.Unlock()
+			lock, err := h.Lock()
+			if err != nil {
+				time.Sleep(time.Second * 3)
+				continue
+			}
+			if lock {
+				h.StartService()
+			} else {
+				h.StopService(false)
+			}
+			time.Sleep(time.Second * 3)
+		}
+	}()
+}
+
+// start tcp service agent
+// service stop will start a tcp service agent
+func (h *Binlog) agentStart() {
+	serviceIp, port := h.GetLeader()
+	currentIp, currentPort := h.GetCurrent()
+	if currentIp == serviceIp && currentPort == port {
+		log.Debugf("can not start agent with current node %s:%d", currentIp, currentPort)
+		return
+	}
+	if serviceIp == "" || port == 0 {
+		log.Warnf("leader ip and port is empty, wait for init, %s:%d", serviceIp, port)
+		return
+	}
+	if serviceIp == "" || port == 0 {
+		return
+	}
+	for _, s := range h.services {
+		s.AgentStart(serviceIp, port)
+	}
+}
+
+// service reload
+func (h *Binlog) Reload() {
+	for _, s := range h.services {
+		s.Reload()
 	}
 }
