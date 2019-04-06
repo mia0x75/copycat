@@ -397,3 +397,7 @@ func (tcp *TcpService) keepalive() {
 		time.Sleep(time.Second * 3)
 	}
 }
+
+func (tcp *TcpService) Name() string {
+	return "tcp"
+}

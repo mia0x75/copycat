@@ -109,8 +109,8 @@ func main() {
 	tcpService := services.NewTcpService(ctx)
 
 	blog := binlog.NewBinlog(ctx)
-	blog.RegisterService(binlog.ServiceNameTcp, tcpService)
-	blog.RegisterService(binlog.ServiceNameHttp, httpService)
+	blog.RegisterService(tcpService)
+	blog.RegisterService(httpService)
 	blog.Start()
 
 	// wait exit

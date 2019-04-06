@@ -16,6 +16,7 @@ type Service interface {
 	Reload()
 	AgentStart(serviceIp string, port int)
 	AgentStop()
+	Name() string
 }
 
 const (

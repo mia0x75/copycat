@@ -10,16 +10,16 @@ func newHttpGroup(ctx *app.Context, groupConfig app.HttpNodeConfig) *httpGroup {
 	group := &httpGroup{
 		name:   groupConfig.Name,
 		filter: groupConfig.Filter,
-		nodes:  nil,
+		nodes:  make(httpNodes, len(groupConfig.Nodes)),
 	}
-	for _, url := range groupConfig.Nodes {
-		group.nodes = append(group.nodes, newHttpNode(ctx, url))
+	for i, url := range groupConfig.Nodes {
+		group.nodes[i] = newHttpNode(ctx, url)
 	}
 	return group
 }
 
 func (group *httpGroup) match(table string) bool {
-	if len(group.nodes) <= 0 || !matchFilters(group.filter, table) {
+	if len(group.nodes) <= 0 || !MatchFilters(group.filter, table) {
 		return false
 	}
 	return true

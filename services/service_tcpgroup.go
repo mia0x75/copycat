@@ -1,7 +1,6 @@
 package services
 
 import (
-	"regexp"
 	"sync"
 
 	"github.com/mia0x75/nova/app"
@@ -18,16 +17,7 @@ func newTcpGroup(group app.TcpGroupConfig) *tcpGroup {
 }
 
 func (g *tcpGroup) match(table string) bool {
-	if len(g.filter) <= 0 {
-		return true
-	}
-	for _, f := range g.filter {
-		match, err := regexp.MatchString(f, table)
-		if match && err == nil {
-			return true
-		}
-	}
-	return false
+	return MatchFilters(g.filter, table)
 }
 
 func (g *tcpGroup) append(node *tcpClientNode) {

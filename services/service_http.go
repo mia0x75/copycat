@@ -83,3 +83,7 @@ func (client *HttpService) AgentStart(serviceIp string, port int) {}
 func (client *HttpService) AgentStop() {}
 
 func (client *HttpService) SendPos(data []byte) {}
+
+func (client *HttpService) Name() string {
+	return "http"
+}
