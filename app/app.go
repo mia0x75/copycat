@@ -15,10 +15,8 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/mia0x75/nova/file"
-	"github.com/mia0x75/nova/ip"
-	mlog "github.com/mia0x75/nova/log"
 	"github.com/mia0x75/nova/path"
-	wstring "github.com/mia0x75/nova/string"
+	"github.com/mia0x75/nova/utils"
 )
 
 var ctx *daemon.Context = nil
@@ -72,10 +70,6 @@ func Init() {
 	}()
 	// set timezone
 	time.LoadLocation(appConfig.TimeZone)
-	if DEBUG {
-		// set log context hook
-		log.AddHook(mlog.ContextHook{})
-	}
 	// set cpu num
 	runtime.GOMAXPROCS(runtime.NumCPU()) //指定cpu为多核运行 旧版本兼容
 }
@@ -113,7 +107,7 @@ func GetKey(sessionFile string) string {
 		}
 	}
 	//write a new key
-	key := fmt.Sprintf("%d-%s", time.Now().Unix(), wstring.RandString(64))
+	key := fmt.Sprintf("%d-%s", time.Now().Unix(), utils.RandString(64))
 	dir := path.GetParent(sessionFile)
 	path.Mkdir(dir)
 	n := file.Write(sessionFile, key, false)
@@ -184,7 +178,7 @@ func getTcpConfig() (*TcpConfig, error) {
 		return nil, ErrorFileParse
 	}
 	if tcpConfig.ServiceIp == "" {
-		tcpConfig.ServiceIp, err = ip.Local()
+		tcpConfig.ServiceIp, err = utils.Local()
 		if err != nil {
 			log.Panicf("can not get local ip, please set service ip(service_ip) in file %s", configFile)
 		}

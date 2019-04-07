@@ -25,7 +25,7 @@ type Context struct {
 	AppConfig   *AppConfig
 }
 
-// new app context
+// NewContext new app context
 func NewContext() *Context {
 	httpConfig, _ := getHttpConfig()
 	tcpConfig, _ := getTcpConfig()
@@ -60,6 +60,7 @@ func (ctx *Context) ReloadHttpConfig() {
 	ctx.HttpConfig = httpConfig
 }
 
+// ReloadTcpConfig
 func (ctx *Context) ReloadTcpConfig() {
 	tcpConfig, err := getTcpConfig()
 	if err != nil {

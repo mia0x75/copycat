@@ -1,7 +1,9 @@
-package string
+package utils
 
 import (
+	"math/rand"
 	"strconv"
+	"time"
 )
 
 type WString struct {
@@ -212,4 +214,15 @@ func (str *WString) ToFloat64() float64 {
 		return float64(str.Str.(uint))
 	}
 	return 0
+}
+
+func RandString(slen int) string {
+	str := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	bt := []byte(str)
+	result := make([]byte, 0)
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	for i := 0; i < slen; i++ {
+		result = append(result, bt[r.Intn(len(bt))])
+	}
+	return string(result)
 }

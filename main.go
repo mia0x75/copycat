@@ -9,11 +9,12 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/mia0x75/mac/hack"
 	"github.com/mia0x75/nova/agent"
 	"github.com/mia0x75/nova/app"
 	"github.com/mia0x75/nova/binlog"
 	"github.com/mia0x75/nova/control"
-	"github.com/mia0x75/nova/hack"
+	"github.com/mia0x75/nova/g"
 	"github.com/mia0x75/nova/services"
 )
 
@@ -44,8 +45,8 @@ func runCmd(ctx *app.Context) bool {
 		if *versionCmd || *vCmd {
 			fmt.Print(banner)
 
-			log.Infof("git commit: %s", hack.Version)
-			log.Infof("build time: %s", hack.Compile)
+			log.Infof("git commit: %s", g.Version)
+			log.Infof("build time: %s", g.Compile)
 			log.Infof("system: %s/%s", runtime.GOOS, runtime.GOARCH)
 			log.Infof("version: %s", app.VERSION)
 			return true
