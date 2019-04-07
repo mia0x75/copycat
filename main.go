@@ -9,8 +9,10 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/mia0x75/nova/agent"
 	"github.com/mia0x75/nova/app"
 	"github.com/mia0x75/nova/binlog"
+	"github.com/mia0x75/nova/control"
 	"github.com/mia0x75/nova/hack"
 	"github.com/mia0x75/nova/services"
 )
@@ -53,21 +55,22 @@ func runCmd(ctx *app.Context) bool {
 			app.Usage()
 			return true
 		}
-		ctl := services.NewControl(ctx)
-		defer ctl.Close()
+		cli := control.NewClient(ctx)
+		defer cli.Close()
 		// Stop service
 		if *stopCmd {
-			ctl.Stop()
+			cli.Stop()
 			return true
 		}
 		// Reload configuration
 		if *reloadCmd {
-			ctl.Reload()
+			// TODO:
+			// cli.Reload(*reloadCmd)
 			return true
 		}
 		// Show service running status
 		if *statusCmd {
-			ctl.ShowStatus()
+			cli.ShowMembers()
 			return true
 		}
 	}
@@ -108,10 +111,57 @@ func main() {
 	httpService := services.NewHttpService(ctx)
 	tcpService := services.NewTcpService(ctx)
 
-	blog := binlog.NewBinlog(ctx)
+	agentServer := agent.NewAgentServer(
+		ctx,
+		agent.OnEvent(tcpService.SendAll),
+		agent.OnRaw(tcpService.SendRaw),
+	)
+
+	blog := binlog.NewBinlog(
+		ctx,
+		binlog.PosChange(agentServer.SendPos),
+		binlog.OnEvent(agentServer.SendEvent),
+	)
+
 	blog.RegisterService(tcpService)
 	blog.RegisterService(httpService)
 	blog.Start()
+
+	// set agent receive pos callback
+	// 延迟依赖绑定
+	// agent与binlog相互依赖
+	agent.OnPos(blog.SaveBinlogPosition)(agentServer)
+	agent.OnLeader(blog.OnLeader)(agentServer)
+
+	agentServer.Start()
+	defer agentServer.Close()
+
+	var reload = func(name string) {
+		if name == "all" {
+			tcpService.Reload()
+			httpService.Reload()
+		} else {
+			switch name {
+			case httpService.Name():
+				httpService.Reload()
+			case tcpService.Name():
+				tcpService.Reload()
+			default:
+				log.Errorf("unknown service: %v", name)
+			}
+		}
+	}
+
+	// stop、reload、members ... support
+	// 本地控制命令支持
+	ctl := control.NewControl(
+		ctx,
+		control.ShowMember(agentServer.ShowMembers),
+		control.Reload(reload),
+		control.Stop(ctx.Stop),
+	)
+	ctl.Start()
+	defer ctl.Close()
 
 	// wait exit
 	select {

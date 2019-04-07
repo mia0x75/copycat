@@ -1,4 +1,4 @@
-package services
+package control
 
 import (
 	"fmt"
@@ -8,14 +8,15 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/mia0x75/nova/app"
+	"github.com/mia0x75/nova/services"
 )
 
 type control struct {
 	conn *net.TCPConn
 }
 
-func NewControl(ctx *app.Context) *control {
-	tcpAddr, err := net.ResolveTCPAddr("tcp4", fmt.Sprintf("%s:%d", ctx.TcpConfig.ServiceIp, ctx.TcpConfig.Port))
+func NewClient(ctx *app.Context) *control {
+	tcpAddr, err := net.ResolveTCPAddr("tcp4", ctx.AppConfig.ControlListen)
 	if err != nil {
 		log.Panicf("start control with error: %+v", err)
 	}
@@ -24,18 +25,7 @@ func NewControl(ctx *app.Context) *control {
 	if err != nil {
 		log.Panicf("start control with error: %+v", err)
 	}
-	con.auth()
 	return con
-}
-
-func (con *control) auth() {
-	token := app.GetKey(app.TOKEN_FILE)
-	log.Debugf("token(%d): %s", len(token), token)
-	data := PackPro(FlagControl, []byte(token))
-	con.conn.Write(data)
-	var buf = make([]byte, 1024)
-	con.conn.SetReadDeadline(time.Now().Add(time.Second * 3))
-	con.conn.Read(buf)
 }
 
 func (con *control) Close() {
@@ -44,7 +34,7 @@ func (con *control) Close() {
 
 // -stop
 func (con *control) Stop() {
-	data := pack(CMD_STOP, []byte(""))
+	data := services.Pack(CMD_STOP, []byte(""))
 	con.conn.Write(data)
 	var buf = make([]byte, 1024)
 	con.conn.SetReadDeadline(time.Now().Add(time.Second * 3))
@@ -52,17 +42,18 @@ func (con *control) Stop() {
 	fmt.Println(string(buf))
 }
 
-func (con *control) Reload() {
-	data := pack(CMD_RELOAD, []byte(""))
+//-service-reload http
+//-service-reload tcp
+//-service-reload all ##重新加载全部服务
+//cmd: http、tcp、all
+func (con *control) Reload(serviceName string) {
+	data := services.Pack(CMD_RELOAD, []byte(serviceName))
 	con.conn.Write(data)
 }
 
-func (con *control) Restart() {
-
-}
-
-func (con *control) ShowStatus() {
-	data := pack(CMD_SHOW_MEMBERS, []byte(""))
+// -members
+func (con *control) ShowMembers() {
+	data := services.Pack(CMD_SHOW_MEMBERS, []byte(""))
 	con.conn.Write(data)
 	var buf = make([]byte, 40960)
 	con.conn.SetReadDeadline(time.Now().Add(time.Second * 30))

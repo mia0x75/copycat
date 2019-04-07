@@ -12,7 +12,7 @@ import (
 	"github.com/mia0x75/nova/services"
 )
 
-func NewBinlog(ctx *app.Context) *Binlog {
+func NewBinlog(ctx *app.Context, opts ...BinlogOption) *Binlog {
 	binlog := &Binlog{
 		Config:           ctx.MysqlConfig,                   //
 		wg:               new(sync.WaitGroup),               //
@@ -20,48 +20,32 @@ func NewBinlog(ctx *app.Context) *Binlog {
 		statusLock:       new(sync.Mutex),                   //
 		ctx:              ctx,                               //
 		services:         make(map[string]services.Service), //
-		ServiceIp:        ctx.TcpConfig.ServiceIp,           //
-		ServicePort:      ctx.TcpConfig.Port,                //
 		startServiceChan: make(chan struct{}, 100),          //
 		stopServiceChan:  make(chan bool, 100),              //
 		status:           0,                                 //
+		onPosChanges:     make([]PosChangeFunc, 0),          //
 	}
-	binlog.consulInit()
+	if len(opts) > 0 {
+		for _, f := range opts {
+			f(binlog)
+		}
+	}
 	binlog.handlerInit()
 	binlog.lookService()
-	go binlog.reloadService()
-	go binlog.showMembersService()
 	return binlog
 }
 
-func (h *Binlog) showMembersService() {
-	for {
-		select {
-		case _, ok := <-h.ctx.ShowMembersChan:
-			if !ok {
-				return
-			}
-			if len(h.ctx.ShowMembersRes) < cap(h.ctx.ShowMembersRes) {
-				members := h.ShowMembers()
-				h.ctx.ShowMembersRes <- members
-			}
-		case <-h.ctx.Ctx.Done():
-			return
-		}
+// if pos change, will call h.onPosChanges func
+func PosChange(f PosChangeFunc) BinlogOption {
+	return func(h *Binlog) {
+		h.onPosChanges = append(h.onPosChanges, f)
 	}
 }
 
-func (h *Binlog) reloadService() {
-	for {
-		select {
-		case _, ok := <-h.ctx.ReloadDone():
-			if !ok {
-				return
-			}
-			h.Reload()
-		case <-h.ctx.Ctx.Done():
-			return
-		}
+// set on event callback
+func OnEvent(f OnEventFunc) BinlogOption {
+	return func(h *Binlog) {
+		h.onEvent = append(h.onEvent, f)
 	}
 }
 
@@ -79,11 +63,10 @@ func (h *Binlog) Close() {
 		log.Debugf("%s service exit", name)
 		service.Close()
 	}
-	h.closeConsul()
-	h.agent.ServiceDeregister(h.sessionId)
 	h.wg.Wait()
 }
 
+// for start and stop binlog service
 func (h *Binlog) lookService() {
 	h.wg.Add(2)
 	go func() {
@@ -159,7 +142,7 @@ func (h *Binlog) lookService() {
 				}
 				if exit {
 					r := packPos(h.lastBinFile, int64(h.lastPos), atomic.LoadInt64(&h.EventIndex))
-					h.SaveBinlogPositionCache(r)
+					h.saveBinlogPositionCache(r)
 					h.statusLock.Lock()
 					if h.status&_cacheHandlerIsOpened > 0 {
 						h.status ^= _cacheHandlerIsOpened
@@ -182,79 +165,28 @@ func (h *Binlog) lookService() {
 }
 
 func (h *Binlog) StopService(exit bool) {
+	log.Debugf("===========binlog service stop was called===========")
 	h.stopServiceChan <- exit
-	if !exit {
-		h.agentStart()
-	}
 }
 
 func (h *Binlog) StartService() {
+	log.Debugf("===========binlog service start was called===========")
 	h.startServiceChan <- struct{}{}
-	for _, s := range h.services {
-		s.AgentStop()
-	}
 }
 
 func (h *Binlog) Start() {
-	log.Debugf("===========binlog service start===========")
 	for _, service := range h.services {
 		service.Start()
 	}
-	h.statusLock.Lock()
-	if h.status&_enableConsul <= 0 {
-		h.statusLock.Unlock()
-		log.Debugf("is not enable consul")
+}
+
+func (h *Binlog) OnLeader(isLeader bool) {
+	log.Debugf("========OnLeader call========")
+	if isLeader {
+		// leader start service
 		h.StartService()
-		return
-	}
-	h.statusLock.Unlock()
-	go func() {
-		for {
-			h.statusLock.Lock()
-			if h.status&_binlogIsExit > 0 {
-				h.statusLock.Unlock()
-				return
-			}
-			h.statusLock.Unlock()
-			lock, err := h.Lock()
-			if err != nil {
-				time.Sleep(time.Second * 3)
-				continue
-			}
-			if lock {
-				h.StartService()
-			} else {
-				h.StopService(false)
-			}
-			time.Sleep(time.Second * 3)
-		}
-	}()
-}
-
-// start tcp service agent
-// service stop will start a tcp service agent
-func (h *Binlog) agentStart() {
-	serviceIp, port := h.GetLeader()
-	currentIp, currentPort := h.GetCurrent()
-	if currentIp == serviceIp && currentPort == port {
-		log.Debugf("can not start agent with current node %s:%d", currentIp, currentPort)
-		return
-	}
-	if serviceIp == "" || port == 0 {
-		log.Warnf("leader ip and port is empty, wait for init, %s:%d", serviceIp, port)
-		return
-	}
-	if serviceIp == "" || port == 0 {
-		return
-	}
-	for _, s := range h.services {
-		s.AgentStart(serviceIp, port)
-	}
-}
-
-// service reload
-func (h *Binlog) Reload() {
-	for _, s := range h.services {
-		s.Reload()
+	} else {
+		// if not leader, stop service
+		h.StopService(false)
 	}
 }

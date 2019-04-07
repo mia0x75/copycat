@@ -16,16 +16,14 @@ type Context struct {
 	// canal context func
 	Cancel context.CancelFunc
 	// pid file path
-	PidFile         string
-	cancelChan      chan struct{}
-	reloadChan      chan string
-	ShowMembersChan chan struct{}
-	ShowMembersRes  chan string
-	PosChan         chan string
-	HttpConfig      *HttpConfig
-	TcpConfig       *TcpConfig
-	MysqlConfig     *MysqlConfig
-	ClusterConfig   *ClusterConfig
+	PidFile       string
+	cancelChan    chan struct{}
+	PosChan       chan string
+	HttpConfig    *HttpConfig
+	TcpConfig     *TcpConfig
+	MysqlConfig   *MysqlConfig
+	ClusterConfig *ClusterConfig
+	AppConfig     *AppConfig
 }
 
 // new app context
@@ -34,16 +32,14 @@ func NewContext() *Context {
 	tcpConfig, _ := getTcpConfig()
 	mysqlConfig, _ := getMysqlConfig()
 	clusterConfig, _ := getClusterConfig()
+	appConfig, _ := GetAppConfig()
 	ctx := &Context{
-		cancelChan:      make(chan struct{}),
-		reloadChan:      make(chan string, 100),
-		ShowMembersChan: make(chan struct{}, 100),
-		ShowMembersRes:  make(chan string, 12),
-		PosChan:         make(chan string, 10000),
-		HttpConfig:      httpConfig,
-		TcpConfig:       tcpConfig,
-		MysqlConfig:     mysqlConfig,
-		ClusterConfig:   clusterConfig,
+		cancelChan:    make(chan struct{}),
+		HttpConfig:    httpConfig, // TODO:
+		TcpConfig:     tcpConfig,
+		MysqlConfig:   mysqlConfig,
+		ClusterConfig: clusterConfig,
+		AppConfig:     appConfig,
 	}
 	ctx.Ctx, ctx.Cancel = context.WithCancel(context.Background())
 	go ctx.signalHandler()
@@ -56,14 +52,6 @@ func (ctx *Context) Stop() {
 
 func (ctx *Context) Done() <-chan struct{} {
 	return ctx.cancelChan
-}
-
-func (ctx *Context) Reload(serviceName string) {
-	ctx.reloadChan <- serviceName
-}
-
-func (ctx *Context) ReloadDone() <-chan string {
-	return ctx.reloadChan
 }
 
 func (ctx *Context) ReloadHttpConfig() {

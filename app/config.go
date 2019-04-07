@@ -10,9 +10,11 @@ import (
 )
 
 type AppConfig struct {
-	LogLevel    int    `toml:"log_level"`
-	PprofListen string `toml:"pprof_listen"`
-	TimeZone    string `toml:"time_zone"`
+	LogLevel      int    `toml:"log_level"`
+	ControlListen string `toml:"control_listen"` // = "0.0.0:6061"
+	AgentfListen  string `toml:"agent_listen"`
+	PprofListen   string `toml:"pprof_listen"`
+	TimeZone      string `toml:"time_zone"`
 }
 
 type HttpNodeConfig struct {

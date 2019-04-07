@@ -1,10 +1,11 @@
 package services
 
 import (
+	"errors"
 	"regexp"
 )
 
-func pack(cmd int, msg []byte) []byte {
+func Pack(cmd int, msg []byte) []byte {
 	l := len(msg)
 	r := make([]byte, l+6)
 	cl := l + 2
@@ -16,6 +17,19 @@ func pack(cmd int, msg []byte) []byte {
 	r[5] = byte(cmd >> 8)
 	copy(r[6:], msg)
 	return r
+}
+
+var DataLenError = errors.New("data len error")
+
+func Unpack(data []byte) (int, []byte, error) {
+	clen := int(data[0]) | int(data[1])<<8 |
+		int(data[2])<<16 | int(data[3])<<24
+	if len(data) < clen+4 {
+		return 0, nil, DataLenError
+	}
+	cmd := int(data[4]) | int(data[5])<<8
+	content := data[6 : clen+4]
+	return cmd, content, nil
 }
 
 func hasCmd(cmd int) bool {

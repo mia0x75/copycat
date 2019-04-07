@@ -9,14 +9,12 @@ import (
 )
 
 type Service interface {
-	SendAll(table string, data []byte) bool
-	SendPos(data []byte)
-	Start()
-	Close()
-	Reload()
-	AgentStart(serviceIp string, port int)
-	AgentStop()
-	Name() string
+	SendAll(table string, data []byte) bool // 服务广播
+	Start()                                 // 启动服务
+	Close()                                 // 关闭服务
+	Reload()                                // 重新加载服务配置
+	Name() string                           // 返回服务名称
+	SendRaw(data []byte) bool               // 用于发送agent透传的原始数据
 }
 
 const (
@@ -47,8 +45,6 @@ const (
 
 const (
 	serviceEnable = 1 << iota
-	agentStatusOnline
-	agentStatusConnect
 )
 
 type httpGroup struct {
@@ -95,7 +91,13 @@ type tcpClientNode struct {
 	wg               *sync.WaitGroup //
 	ctx              *app.Context    //
 	lock             *sync.Mutex     // 互斥锁，修改资源时锁定
+	onclose          []NodeFunc
+	onpro            SetProFunc
 }
+
+type NodeFunc func(n *tcpClientNode)
+type SetProFunc func(n *tcpClientNode, groupName string) bool
+type NodeOption func(n *tcpClientNode)
 
 type tcpClients []*tcpClientNode
 type tcpGroups map[string]*tcpGroup
@@ -118,7 +120,6 @@ type TcpService struct {
 	listener   *net.Listener   //
 	wg         *sync.WaitGroup //
 	ServiceIp  string
-	agents     tcpClients
 	status     int
 	token      string
 	conn       *net.TCPConn
@@ -129,7 +130,6 @@ var (
 	_ Service = &TcpService{}
 	_ Service = &HttpService{}
 
-	packDataTokenError = pack(CMD_AUTH, []byte("token error"))
-	packDataTickOk     = pack(CMD_TICK, []byte("ok"))
-	packDataSetPro     = pack(CMD_SET_PRO, []byte("ok"))
+	packDataTickOk = Pack(CMD_TICK, []byte("ok"))
+	packDataSetPro = Pack(CMD_SET_PRO, []byte("ok"))
 )

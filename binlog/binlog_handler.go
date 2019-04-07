@@ -55,7 +55,6 @@ func (h *Binlog) handlerInit() {
 	h.posChan = make(chan []byte, posChanLen)
 	log.Debugf("current pos: (%+v, %+v)", h.lastBinFile, h.lastPos)
 	go h.asyncSavePosition()
-	go h.lookPosChange()
 }
 
 func (h *Binlog) asyncSavePosition() {
@@ -78,6 +77,9 @@ func (h *Binlog) asyncSavePosition() {
 			} else {
 				h.statusLock.Unlock()
 				log.Warnf("handler is closed")
+			}
+			for _, f := range h.onPosChanges {
+				f(r)
 			}
 		case <-h.ctx.Ctx.Done():
 			if len(h.posChan) <= 0 {
@@ -117,6 +119,10 @@ func (h *Binlog) notify(table string, data map[string]interface{}) {
 	}
 	for _, service := range h.services {
 		service.SendAll(table, jsonData)
+	}
+
+	for _, f := range h.onEvent {
+		f(table, jsonData)
 	}
 }
 
@@ -233,54 +239,28 @@ func (h *Binlog) OnGTID(g mysql.GTIDSet) error {
 	return nil
 }
 
-func (h *Binlog) lookPosChange() {
-	for {
-		select {
-		case data, ok := <-h.ctx.PosChan:
-			if !ok {
-				return
-			}
-			for {
-				if data == "" || len(data) < 19 {
-					log.Errorf("pos data error: %v", data)
-					break
-				}
-				log.Debugf("onPosChange")
-				file, pos, index := unpackPos([]byte(data))
-				if file == "" || pos <= 0 {
-					log.Errorf("error with: %s, %d", file, pos)
-					break
-				}
-				h.lastBinFile = file
-				h.lastPos = uint32(pos)
-				atomic.StoreInt64(&h.EventIndex, index)
-				r := packPos(file, pos, index)
-				h.SaveBinlogPositionCache(r)
-				break
-			}
-		case <-h.ctx.Ctx.Done():
-			if len(h.ctx.PosChan) <= 0 {
-				return
-			}
-		}
-	}
-}
-
 func (h *Binlog) OnPosSynced(p mysql.Position, b bool) error {
 	log.Debugf("OnPosSynced fired with data: %+v, %v", p, b)
 	eventIndex := atomic.LoadInt64(&h.EventIndex)
 	pos := int64(p.Pos)
 	data := packPos(p.Name, pos, eventIndex)
-	h.SaveBinlogPositionCache(data)
-	for _, service := range h.services {
-		service.SendPos(data)
-	}
+	h.saveBinlogPositionCache(data)
 	h.lastBinFile = p.Name
 	h.lastPos = p.Pos
 	return nil
 }
 
-func (h *Binlog) SaveBinlogPositionCache(r []byte) {
+// use for agent sync pos callback
+func (h *Binlog) SaveBinlogPosition(r []byte) {
+	file, pos, index := unpackPos(r)
+	h.lastBinFile = file    //p.Name
+	h.lastPos = uint32(pos) //p.Pos
+	atomic.StoreInt64(&h.EventIndex, index)
+	h.saveBinlogPositionCache(r)
+}
+
+// agent 接收到pos改变的时候也会回调到这里
+func (h *Binlog) saveBinlogPositionCache(r []byte) {
 	h.statusLock.Lock()
 	if h.status&_binlogIsExit > 0 {
 		h.statusLock.Unlock()
