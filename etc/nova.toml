@@ -10,5 +10,4 @@ log_level = 5
 time_zone = "Local"
 
 control_listen = "127.0.0.1:6061"
-agent_listen = "127.0.0.1:6062"
 pprof_listen = "0.0.0.0:5050"

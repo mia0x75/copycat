@@ -12,7 +12,6 @@ import (
 type AppConfig struct {
 	LogLevel      int    `toml:"log_level"`
 	ControlListen string `toml:"control_listen"` // = "0.0.0:6061"
-	AgentfListen  string `toml:"agent_listen"`
 	PprofListen   string `toml:"pprof_listen"`
 	TimeZone      string `toml:"time_zone"`
 }
@@ -69,13 +68,6 @@ type MysqlConfig struct {
 
 type ConsulAddr struct {
 	Address string `toml:"address"`
-}
-
-// consul config
-type ClusterConfig struct {
-	Enable bool        `toml:"enable"`
-	Lock   string      `toml:"lock"`
-	Consul *ConsulAddr `toml:"consul"`
 }
 
 // debug mode, default is false

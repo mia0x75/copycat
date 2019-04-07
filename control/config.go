@@ -23,7 +23,6 @@ const (
 
 const (
 	tcpNodeOnline = 1 << iota
-	tcpNodeIsControl
 )
 
 type TcpClientNode struct {

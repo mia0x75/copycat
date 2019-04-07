@@ -38,7 +38,7 @@ func Read(filePath string) string {
 	}
 	dat, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		log.Errorf("read file with error: %+v")
+		log.Errorf("read file with error: %+v", err)
 		return ""
 	}
 	return string(dat)

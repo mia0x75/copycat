@@ -80,30 +80,38 @@ func (tcp *AgentClient) keepalive() {
 		tcp.statusLock.Unlock()
 		n, err := tcp.conn.Write(data)
 		if err != nil {
-			log.Errorf("agent keepalive error: %d, %v", n, err)
+			log.Errorf("[agent - client] agent keepalive error: %d, %v", n, err)
 			tcp.disconnect()
 		} else if n != dl {
-			log.Errorf("%s send not complete", tcp.conn.RemoteAddr().String())
+			log.Errorf("[agent - client] %s send not complete", tcp.conn.RemoteAddr().String())
 		}
 		time.Sleep(3 * time.Second)
 	}
 }
 
 func (tcp *AgentClient) OnLeader(leader bool) {
-	log.Debugf("==============AgentClient OnLeader %v===============", leader)
-	ip, port, _ := tcp.getLeader()
-	if ip == "" || port <= 0 {
-		log.Errorf("ip or port empty: %v, %v", ip, port)
-		return
-	}
-	if leader {
-		// 断开client到 agent server的连接
-		tcp.AgentStop()
-	} else {
-		// 查询leader的 服务
-		// 连接到agent server (leader)
-		tcp.AgentStart(ip, port)
-	}
+	go func() {
+		log.Debugf("==============AgentClient OnLeader %v===============", leader)
+		var ip string
+		var port int
+		for {
+			ip, port, _ = tcp.getLeader()
+			if ip == "" || port <= 0 {
+				log.Warnf("ip or port empty: %v, %v, wait for init", ip, port)
+				time.Sleep(time.Second * 1)
+				continue
+			}
+			break
+		}
+		if leader {
+			// 断开client到 agent server的连接
+			tcp.AgentStop()
+		} else {
+			// 查询leader的 服务
+			// 连接到agent server (leader)
+			tcp.AgentStart(ip, port)
+		}
+	}()
 }
 
 func (tcp *AgentClient) connect(ip string, port int) {

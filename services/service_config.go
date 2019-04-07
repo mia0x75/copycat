@@ -39,12 +39,11 @@ const (
 const (
 	FlagSetPro = iota
 	FlagPing
-	FlagControl
-	FlagAgent
 )
 
 const (
 	serviceEnable = 1 << iota
+	serviceClosed
 )
 
 type httpGroup struct {
@@ -75,9 +74,6 @@ type httpNode struct {
 
 const (
 	tcpNodeOnline = 1 << iota
-	tcpNodeIsNormal
-	tcpNodeIsAgent
-	tcpNodeIsControl
 )
 
 type tcpClientNode struct {
@@ -100,7 +96,6 @@ type SetProFunc func(n *tcpClientNode, groupName string) bool
 type NodeOption func(n *tcpClientNode)
 
 type tcpClients []*tcpClientNode
-type tcpGroups map[string]*tcpGroup
 
 type tcpGroup struct {
 	name   string
@@ -111,19 +106,24 @@ type tcpGroup struct {
 
 type TcpService struct {
 	Service
-	Ip         string      // 监听ip
-	Port       int         // 监听端口
-	lock       *sync.Mutex // 互斥锁，修改资源时锁定
-	statusLock *sync.Mutex
-	groups     tcpGroups       //
-	ctx        *app.Context    // *context.Context
-	listener   *net.Listener   //
-	wg         *sync.WaitGroup //
-	ServiceIp  string
-	status     int
-	token      string
-	conn       *net.TCPConn
-	buffer     []byte
+	Ip          string      // 监听ip
+	Port        int         // 监听端口
+	lock        *sync.Mutex // 互斥锁，修改资源时锁定
+	statusLock  *sync.Mutex
+	ctx         *app.Context    // *context.Context
+	listener    *net.Listener   //
+	wg          *sync.WaitGroup //
+	ServiceIp   string
+	status      int
+	token       string
+	conn        *net.TCPConn
+	buffer      []byte
+	sendAll     []SendAllFunc
+	sendRaw     []SendRawFunc
+	onConnect   []OnConnectFunc
+	onClose     []CloseFunc
+	onKeepalive []KeepaliveFunc
+	reload      []ReloadFunc
 }
 
 var (
@@ -133,3 +133,11 @@ var (
 	packDataTickOk = Pack(CMD_TICK, []byte("ok"))
 	packDataSetPro = Pack(CMD_SET_PRO, []byte("ok"))
 )
+
+type TcpServiceOption func(service *TcpService)
+type SendAllFunc func(table string, data []byte) bool
+type SendRawFunc func(msg []byte)
+type OnConnectFunc func(conn *net.Conn)
+type CloseFunc func()
+type KeepaliveFunc func(data []byte)
+type ReloadFunc func()

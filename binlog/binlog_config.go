@@ -25,7 +25,6 @@ type Binlog struct {
 	lastBinFile             string                      // the last read binlog file
 	startServiceChan        chan struct{}               //
 	stopServiceChan         chan bool                   //
-	posChan                 chan []byte                 //
 	status                  int                         // binlog status
 
 	//pos change 回调函数
@@ -38,11 +37,7 @@ type PosChangeFunc func(r []byte)
 type OnEventFunc func(table string, data []byte)
 
 const (
-	_binlogIsRunning = 1 << iota
-	_binlogIsExit
-	_cacheHandlerIsOpened
-)
-
-const (
-	posChanLen = 10000
+	binlogIsRunning = 1 << iota
+	binlogIsExit
+	cacheHandlerIsOpened
 )

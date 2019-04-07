@@ -211,17 +211,3 @@ func getMysqlConfig() (*MysqlConfig, error) {
 	}
 	return &appConfig, nil
 }
-
-func getClusterConfig() (*ClusterConfig, error) {
-	var config ClusterConfig
-	configFile := CLUSTER_CONFIG_FILE
-	if !file.Exists(configFile) {
-		log.Errorf("config file not found: %s", configFile)
-		return nil, ErrorFileNotFound
-	}
-	if _, err := toml.DecodeFile(configFile, &config); err != nil {
-		log.Println(err)
-		return nil, ErrorFileParse
-	}
-	return &config, nil
-}

@@ -16,14 +16,13 @@ type Context struct {
 	// canal context func
 	Cancel context.CancelFunc
 	// pid file path
-	PidFile       string
-	cancelChan    chan struct{}
-	PosChan       chan string
-	HttpConfig    *HttpConfig
-	TcpConfig     *TcpConfig
-	MysqlConfig   *MysqlConfig
-	ClusterConfig *ClusterConfig
-	AppConfig     *AppConfig
+	PidFile     string
+	cancelChan  chan struct{}
+	PosChan     chan string
+	HttpConfig  *HttpConfig
+	TcpConfig   *TcpConfig
+	MysqlConfig *MysqlConfig
+	AppConfig   *AppConfig
 }
 
 // new app context
@@ -31,15 +30,13 @@ func NewContext() *Context {
 	httpConfig, _ := getHttpConfig()
 	tcpConfig, _ := getTcpConfig()
 	mysqlConfig, _ := getMysqlConfig()
-	clusterConfig, _ := getClusterConfig()
 	appConfig, _ := GetAppConfig()
 	ctx := &Context{
-		cancelChan:    make(chan struct{}),
-		HttpConfig:    httpConfig, // TODO:
-		TcpConfig:     tcpConfig,
-		MysqlConfig:   mysqlConfig,
-		ClusterConfig: clusterConfig,
-		AppConfig:     appConfig,
+		cancelChan:  make(chan struct{}),
+		HttpConfig:  httpConfig, // TODO:
+		TcpConfig:   tcpConfig,
+		MysqlConfig: mysqlConfig,
+		AppConfig:   appConfig,
 	}
 	ctx.Ctx, ctx.Cancel = context.WithCancel(context.Background())
 	go ctx.signalHandler()

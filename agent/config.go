@@ -4,7 +4,11 @@ import (
 	"net"
 	"sync"
 
+	"github.com/BurntSushi/toml"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/mia0x75/nova/app"
+	"github.com/mia0x75/nova/file"
 	"github.com/mia0x75/nova/services"
 )
 
@@ -92,6 +96,7 @@ type TcpService struct {
 	service    *Service
 	client     *AgentClient
 	watch      *ConsulWatcher
+	enable     bool
 }
 
 type OnPosFunc func(r []byte)
@@ -101,3 +106,25 @@ var (
 	packDataTickOk = services.Pack(CMD_TICK, []byte("ok"))
 	packDataSetPro = services.Pack(CMD_SET_PRO, []byte("ok"))
 )
+
+type AgentConfig struct {
+	Enable        bool   `toml:"enable"`
+	Type          string `toml:"type"`
+	Lock          string `toml:"lock"`
+	AgentListen   string `toml:"agent_listen"`
+	ConsulAddress string `toml:"consul_address"`
+}
+
+func getConfig() (*AgentConfig, error) {
+	var config AgentConfig
+	configFile := app.AGENT_CONFIG_FILE
+	if !file.Exists(configFile) {
+		log.Errorf("config file not found: %s", configFile)
+		return nil, app.ErrorFileNotFound
+	}
+	if _, err := toml.DecodeFile(configFile, &config); err != nil {
+		log.Println(err)
+		return nil, app.ErrorFileParse
+	}
+	return &config, nil
+}

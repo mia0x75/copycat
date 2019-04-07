@@ -6,7 +6,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/mia0x75/nova/platform"
+	"github.com/mia0x75/nova/path"
 )
 
 func init() {
@@ -21,10 +21,8 @@ func init() {
 
 func TestWFile_Write(t *testing.T) {
 	fmt.Println("===============file Write test start===============")
-	file := "/tmp/nova.test"
-	if platform.System(platform.IS_WINDOWS) {
-		file = "C:/nova.test"
-	}
+	file := path.CurrentPath + "/wing-binlog-go.test"
+	defer Delete(file)
 	data := "123456"
 	n := Write(file, data, false)
 	if n != len(data) {

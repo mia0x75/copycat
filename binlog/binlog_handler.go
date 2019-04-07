@@ -28,7 +28,7 @@ func (h *Binlog) handlerInit() {
 		log.Panicf("open cache file with error：%s, %+v", mysqlBinlogCacheFile, err)
 	}
 	h.statusLock.Lock()
-	h.status |= _cacheHandlerIsOpened
+	h.status |= cacheHandlerIsOpened
 	h.statusLock.Unlock()
 	f, p, index := h.getBinlogPositionCache()
 	atomic.StoreInt64(&h.EventIndex, index)
@@ -52,41 +52,7 @@ func (h *Binlog) handlerInit() {
 	}
 	h.lastBinFile = h.Config.BinFile
 	h.lastPos = uint32(h.Config.BinPos)
-	h.posChan = make(chan []byte, posChanLen)
 	log.Debugf("current pos: (%+v, %+v)", h.lastBinFile, h.lastPos)
-	go h.asyncSavePosition()
-}
-
-func (h *Binlog) asyncSavePosition() {
-	h.wg.Add(1)
-	defer h.wg.Done()
-	for {
-		select {
-		case r, ok := <-h.posChan:
-			if !ok {
-				return
-			}
-			log.Debugf("write binlog pos cache: %+v", r)
-			h.statusLock.Lock()
-			if h.status&_cacheHandlerIsOpened > 0 {
-				h.statusLock.Unlock()
-				n, err := h.cacheHandler.WriteAt(r, 0)
-				if err != nil || n <= 0 {
-					log.Errorf("write binlog cache file with error: %+v", err)
-				}
-			} else {
-				h.statusLock.Unlock()
-				log.Warnf("handler is closed")
-			}
-			for _, f := range h.onPosChanges {
-				f(r)
-			}
-		case <-h.ctx.Ctx.Done():
-			if len(h.posChan) <= 0 {
-				return
-			}
-		}
-	}
 }
 
 func (h *Binlog) setHandler() {
@@ -110,13 +76,14 @@ func (h *Binlog) RegisterService(s services.Service) {
 	h.lock.Unlock()
 }
 
-func (h *Binlog) notify(table string, data map[string]interface{}) {
+func (h *Binlog) notify(data map[string]interface{}) {
 	log.Debugf("binlog notify: %+v", data)
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		log.Errorf("json pack data error[%v]: %v", err, data)
 		return
 	}
+	table := data["database"].(string) + "." + data["table"].(string)
 	for _, service := range h.services {
 		service.SendAll(table, jsonData)
 	}
@@ -128,7 +95,7 @@ func (h *Binlog) notify(table string, data map[string]interface{}) {
 
 func (h *Binlog) OnRow(e *canal.RowsEvent) error {
 	h.statusLock.Lock()
-	if h.status&_binlogIsExit > 0 {
+	if h.status&binlogIsExit > 0 {
 		h.statusLock.Unlock()
 		return nil
 	}
@@ -179,7 +146,7 @@ func (h *Binlog) OnRow(e *canal.RowsEvent) error {
 			data["new_data"] = newData
 			ed["data"] = data
 			rowData["event"] = ed
-			h.notify(e.Table.Name, rowData)
+			h.notify(rowData)
 		}
 	} else {
 		for i := 0; i < len(e.Rows); i += 1 {
@@ -195,7 +162,7 @@ func (h *Binlog) OnRow(e *canal.RowsEvent) error {
 			}
 			ed["data"] = data
 			rowData["event"] = ed
-			h.notify(e.Table.Name, rowData)
+			h.notify(rowData)
 		}
 	}
 	return nil
@@ -225,7 +192,7 @@ func (h *Binlog) OnDDL(p mysql.Position, e *canal.DDLEvent) error {
 	data["table"] = e.Table
 	data["event_index"] = atomic.AddInt64(&h.EventIndex, int64(1))
 	data["event"] = event
-	h.notify(e.Table, data)
+	h.notify(data)
 	return nil
 }
 
@@ -262,23 +229,29 @@ func (h *Binlog) SaveBinlogPosition(r []byte) {
 // agent 接收到pos改变的时候也会回调到这里
 func (h *Binlog) saveBinlogPositionCache(r []byte) {
 	h.statusLock.Lock()
-	if h.status&_binlogIsExit > 0 {
+	if h.status&binlogIsExit > 0 {
 		h.statusLock.Unlock()
 		return
 	}
+	log.Debugf("write binlog pos cache: %+v", r)
 	h.statusLock.Unlock()
-	for {
-		if len(h.posChan) < cap(h.posChan) {
-			break
+	if h.status&cacheHandlerIsOpened > 0 {
+		n, err := h.cacheHandler.WriteAt(r, 0)
+		if err != nil || n <= 0 {
+			log.Errorf("write binlog cache file with error: %+v", err)
 		}
-		log.Warnf("cache full, try wait")
+	} else {
+		log.Warnf("handler is closed")
 	}
-	h.posChan <- r
+	//只有leader才发送
+	for _, f := range h.onPosChanges {
+		f(r)
+	}
 }
 
 func (h *Binlog) getBinlogPositionCache() (string, int64, int64) {
 	h.statusLock.Lock()
-	if h.status&_cacheHandlerIsOpened <= 0 {
+	if h.status&cacheHandlerIsOpened <= 0 {
 		h.statusLock.Unlock()
 		log.Warnf("handler is closed")
 		return "", 0, 0

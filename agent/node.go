@@ -20,7 +20,7 @@ func newNode(ctx *app.Context, conn *net.Conn, opts ...NodeOption) *tcpClientNod
 		sendFailureTimes: 0,
 		connectTime:      time.Now().Unix(),
 		recvBuf:          make([]byte, 0),
-		status:           tcpNodeOnline | tcpNodeIsAgent,
+		status:           tcpNodeOnline,
 		ctx:              ctx,
 		lock:             new(sync.Mutex),
 		onclose:          make([]NodeFunc, 0),

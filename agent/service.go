@@ -204,6 +204,7 @@ func (sev *Service) Close() {
 }
 
 func (sev *Service) selectLeader() {
+	log.Debugf("====start select leader====")
 	leader, err := sev.Lock()
 	if err != nil {
 		log.Errorf("select leader with error: %v", err)
@@ -217,6 +218,11 @@ func (sev *Service) selectLeader() {
 	// 可以认为某些情况下发生了死锁，可以尝试强制解锁
 	if !leader {
 		_, _, err := sev.getLeader()
+		if err == leaderNotFound {
+			log.Debugf("check deadlock......please wait\n\n")
+			time.Sleep(time.Second * 3)
+		}
+		_, _, err = sev.getLeader()
 		//如果没有leader
 		if err == leaderNotFound {
 			log.Warnf("deadlock found, try to unlock")
@@ -228,12 +234,32 @@ func (sev *Service) selectLeader() {
 				log.Errorf("select leader with error: %v", err)
 				return
 			}
+			sev.leader = leader
+			//register for set tags isleader:true
+			sev.Register()
+		}
+	}
+
+	if leader {
+		// 如果选leader成功
+		// 但是这个时候leader仍然不存在，可以认为网络问题造成注册服务失败
+		// 这里尝试等待并重新注册
+		for {
+			_, _, err := sev.getLeader()
+			if err == leaderNotFound {
+				log.Warnf("leader not found, try register")
+				sev.Register()
+				time.Sleep(time.Millisecond * 10)
+				continue
+			}
+			break
 		}
 	}
 
 	log.Debugf("select leader: %+v", leader)
-
+	// 触发选leader成功相关事件回调
 	if len(sev.onleader) > 0 {
+		log.Debugf("leader on select fired")
 		for _, f := range sev.onleader {
 			f(leader)
 		}
