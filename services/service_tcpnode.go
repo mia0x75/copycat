@@ -102,10 +102,9 @@ func (node *tcpClientNode) onConnect() {
 			} else {
 				log.Debugf("tcp node %s disconnect with error: %v", (*node.conn).RemoteAddr().String(), err)
 			}
-			node.close() //tcp.onClose(node)
+			node.close()
 			return
 		}
-		//log.Debugf("tcp receive: %v", readBuffer[:size])
 		node.onMessage(readBuffer[:size])
 	}
 }
@@ -134,12 +133,6 @@ func (node *tcpClientNode) onMessage(msg []byte) {
 			node.onSetProEvent(content)
 		case CMD_TICK:
 			node.asyncSend(packDataTickOk)
-			//case CMD_STOP:
-			//	tcp.ctx.Stop()
-			//case CMD_RELOAD:
-			//	tcp.ctx.Reload(string(content))
-			//case CMD_SHOW_MEMBERS:
-			//	tcp.onShowMembersEvent(node)
 		default:
 			node.asyncSend(Pack(CMD_ERROR, []byte(fmt.Sprintf("tcp service does not support cmd: %d", cmd))))
 			node.recvBuf = make([]byte, 0)
@@ -159,13 +152,6 @@ func (node *tcpClientNode) onSetProEvent(data []byte) {
 	switch flag {
 	case FlagSetPro:
 		node.onSetPro(content)
-		//case FlagControl:
-		//	tcp.onControl(node, content)
-	//case FlagAgent:
-	//	node.setReadDeadline(time.Time{})
-	//	node.send(packDataSetPro)
-	//	node.changNodeType(tcpNodeIsAgent)
-	//	go node.asyncSendService()
 	case FlagPing:
 		log.Debugf("receive ping data")
 		node.send(packDataSetPro)
@@ -176,24 +162,14 @@ func (node *tcpClientNode) onSetProEvent(data []byte) {
 }
 
 func (node *tcpClientNode) onSetPro(groupName string) {
-	//for _, f := range node.onpro {
-	//	f(node)
-	//}
 	if !node.onpro(node, groupName) {
 		node.send(Pack(CMD_ERROR, []byte(fmt.Sprintf("tcp service, group does not exists: %s", groupName))))
 		node.close()
 		return
 	}
-	//group, found := tcp.groups[groupName]
-	//if !found || groupName == "" {
-	//	node.send(pack(CMD_ERROR, []byte(fmt.Sprintf("tcp service, group does not exists: %s", groupName))))
-	//	node.close()
-	//	return
-	//}
 	node.setReadDeadline(time.Time{})
 	node.send(packDataSetPro)
 	node.setGroup(groupName)
-	//group.append(node)
 	go node.asyncSendService()
 }
 
@@ -216,7 +192,6 @@ func (node *tcpClientNode) asyncSendService() {
 			if err != nil {
 				atomic.AddInt64(&node.sendFailureTimes, int64(1))
 				log.Errorf("tcp send to %s error: %v", (*node.conn).RemoteAddr().String(), err)
-				//tcp.onClose(node)
 				node.close()
 				return
 			}

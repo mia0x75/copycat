@@ -217,7 +217,6 @@ func (tcp *Client) keep() {
 			}
 		}
 		tcp.waiterLock.Unlock()
-		//fmt.Println("#######################tcp.waiter len ", len(tcp.waiter))
 		time.Sleep(time.Second * 3)
 	}
 }
@@ -298,9 +297,7 @@ func (tcp *Client) onMessage(msg []byte) {
 			tcp.waiterLock.RUnlock()
 			if ok {
 				w.data <- data
-			} /*else {
-				log.Warnf("warning: %v waiter does not exists", msgId)
-			}*/
+			}
 		}
 
 		// 判断是否是心跳包，心跳包不触发回调函数

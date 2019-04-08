@@ -35,15 +35,12 @@ func TestNewServer(t *testing.T) {
 		return
 	}
 	defer client.Disconnect()
-	//start := time.Now()
-	//times := 1000
-	//for  i := 0; i < times; i++ {
 	data1 := []byte("hello")
 	data2 := []byte("word")
 	data3 := []byte("hahahahahahahahahahah")
-	w1, _ := client.Send(data1)
-	w2, _ := client.Send(data2)
-	w3, _ := client.Send(data3)
+	w1, _, _ := client.Send(data1)
+	w2, _, _ := client.Send(data2)
+	w3, _, _ := client.Send(data3)
 	res1, _ := w1.Wait(time.Second * 3)
 	res2, _ := w2.Wait(time.Second * 3)
 	res3, _ := w3.Wait(time.Second * 3)
@@ -55,6 +52,4 @@ func TestNewServer(t *testing.T) {
 	fmt.Println("w1 return: ", string(res1))
 	fmt.Println("w2 return: ", string(res2))
 	fmt.Println("w3 return: ", string(res3))
-	//}
-	//fmt.Println("avg use time ", time.Since(start).Nanoseconds()/int64(times), "ns")
 }

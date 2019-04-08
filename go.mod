@@ -27,7 +27,6 @@ require (
 	github.com/jmoiron/sqlx v1.2.0 // indirect
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
-	github.com/pingcap/check v0.0.0-20190102082844-67f458068fc8 // indirect
 	github.com/sevlyar/go-daemon v0.1.4
 	github.com/siddontang/go-mysql v0.0.0-20190312052122-c6ab05a85eb8
 	github.com/sirupsen/logrus v1.4.1

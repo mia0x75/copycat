@@ -98,7 +98,6 @@ func (tcp *SyncClient) Send(data []byte) ([]byte, error) {
 	if n <= 0 || err != nil {
 		return nil, err
 	}
-	//log.Infof("start read message %v", tcp.bufferSize)
 	readBuffer := make([]byte, tcp.bufferSize)
 	if tcp.readTimeout > 0 {
 		tcp.conn.SetReadDeadline(time.Now().Add(tcp.readTimeout))

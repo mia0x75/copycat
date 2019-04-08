@@ -42,10 +42,7 @@ func (con *control) Stop() {
 	fmt.Println(string(buf))
 }
 
-//-service-reload http
-//-service-reload tcp
-//-service-reload all ##重新加载全部服务
-//cmd: http、tcp、all
+// Reload 热更新
 func (con *control) Reload(serviceName string) {
 	data := services.Pack(CMD_RELOAD, []byte(serviceName))
 	con.conn.Write(data)
