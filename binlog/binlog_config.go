@@ -6,8 +6,8 @@ import (
 
 	"github.com/siddontang/go-mysql/canal"
 
-	"github.com/mia0x75/nova/g"
-	"github.com/mia0x75/nova/services"
+	"github.com/mia0x75/copycat/g"
+	"github.com/mia0x75/copycat/services"
 )
 
 type Binlog struct {

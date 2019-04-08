@@ -1,4 +1,4 @@
-BINARY=nova
+BINARY=copycat
 export GO111MODULE=on
 GOPATH ?= $(shell go env GOPATH)
 ifeq "$(GOPATH)" ""

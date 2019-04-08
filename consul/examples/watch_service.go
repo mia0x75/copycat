@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/consul/api"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/mia0x75/nova/consul"
+	"github.com/mia0x75/copycat/consul"
 )
 
 func main() {

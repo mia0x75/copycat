@@ -8,8 +8,8 @@ import (
 	"github.com/siddontang/go-mysql/mysql"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/mia0x75/nova/g"
-	"github.com/mia0x75/nova/services"
+	"github.com/mia0x75/copycat/g"
+	"github.com/mia0x75/copycat/services"
 )
 
 // 创建一个binlog服务对象

@@ -113,7 +113,7 @@ func ParseConfig(cfg string) *GlobalConfig {
 	// 指定了配置文件优先读配置文件，未指定配置文件按如下顺序加载，先找到哪个加载哪个
 	if strings.TrimSpace(cfg) == "" {
 		configs = []string{
-			"/etc/nova/cfg.json",
+			"/etc/copycat/cfg.json",
 			filepath.Join(baseDir, "etc", "cfg.json"),
 			filepath.Join(baseDir, "cfg.json"),
 		}

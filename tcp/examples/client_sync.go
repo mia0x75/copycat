@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/mia0x75/nova/tcp"
+	"github.com/mia0x75/copycat/tcp"
 )
 
 type codec struct{}

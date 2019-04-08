@@ -14,9 +14,9 @@ import (
 	"github.com/siddontang/go-mysql/replication"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/mia0x75/nova/g"
-	"github.com/mia0x75/nova/services"
-	"github.com/mia0x75/nova/utils/path"
+	"github.com/mia0x75/copycat/g"
+	"github.com/mia0x75/copycat/services"
+	"github.com/mia0x75/copycat/utils/path"
 )
 
 // 初始化binlog事件相关句柄

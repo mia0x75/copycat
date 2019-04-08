@@ -13,8 +13,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/toolkits/file"
 
-	"github.com/mia0x75/nova/utils"
-	"github.com/mia0x75/nova/utils/path"
+	"github.com/mia0x75/copycat/utils"
+	"github.com/mia0x75/copycat/utils/path"
 )
 
 var ctx *daemon.Context = nil
@@ -51,7 +51,7 @@ func Init() {
 		//go tool pprof logDemo.exe --text a.prof
 		//go tool pprof your-executable-name profile-filename
 		//go tool pprof your-executable-name http://localhost:6060/debug/pprof/heap
-		//go tool pprof nova http://localhost:6060/debug/pprof/heap
+		//go tool pprof copycat http://localhost:6060/debug/pprof/heap
 		//https://lrita.github.io/2017/05/26/golang-memory-pprof/
 		//然后执行 text
 		//go tool pprof -alloc_space http://127.0.0.1:6060/debug/pprof/heap
@@ -80,13 +80,13 @@ func Release() {
 
 // show usage
 func Usage() {
-	fmt.Println("nova                                   : start service")
-	fmt.Println("nova -h|-help                          : show this message")
-	fmt.Println("nova -v|-version                       : show version info")
-	fmt.Println("nova -stop                             : stop service")
-	fmt.Println("nova -reload                           : reload")
-	fmt.Println("nova -status                           : show status")
-	fmt.Println("nova -d|-daemon                        : run as daemon process")
+	fmt.Println("copycat                                   : start service")
+	fmt.Println("copycat -h|-help                          : show this message")
+	fmt.Println("copycat -v|-version                       : show version info")
+	fmt.Println("copycat -stop                             : stop service")
+	fmt.Println("copycat -reload                           : reload")
+	fmt.Println("copycat -status                           : show status")
+	fmt.Println("copycat -d|-daemon                        : run as daemon process")
 }
 
 // get unique key, param if file path

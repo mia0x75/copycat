@@ -6,8 +6,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/mia0x75/nova/g"
-	"github.com/mia0x75/nova/utils/http"
+	"github.com/mia0x75/copycat/g"
+	"github.com/mia0x75/copycat/utils/http"
 )
 
 func newHttpNode(ctx *g.Context, url string) *httpNode {

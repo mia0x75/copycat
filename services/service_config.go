@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mia0x75/nova/g"
+	"github.com/mia0x75/copycat/g"
 )
 
 type Service interface {

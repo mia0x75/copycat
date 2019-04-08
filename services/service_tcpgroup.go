@@ -3,7 +3,7 @@ package services
 import (
 	"sync"
 
-	"github.com/mia0x75/nova/g"
+	"github.com/mia0x75/copycat/g"
 )
 
 func newTcpGroup(group *g.TCPGroupConfig) *tcpGroup {

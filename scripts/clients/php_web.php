@@ -5,7 +5,7 @@
  * 发送端可以配置将数据发送到http://127.0.0.1:8000/
  */
 
-// 获取nova通过POST发过来的数据
+// 获取copycat通过POST发过来的数据
 $content = file_get_contents('php://input', 'r');
 
 // 直接在控制台输出

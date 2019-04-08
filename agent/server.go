@@ -12,10 +12,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/mia0x75/nova/consul"
-	"github.com/mia0x75/nova/g"
-	"github.com/mia0x75/nova/services"
-	mtcp "github.com/mia0x75/nova/tcp"
+	"github.com/mia0x75/copycat/consul"
+	"github.com/mia0x75/copycat/g"
+	"github.com/mia0x75/copycat/services"
+	mtcp "github.com/mia0x75/copycat/tcp"
 )
 
 //agent 所需要做的事情

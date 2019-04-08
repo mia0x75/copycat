@@ -10,7 +10,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/mia0x75/nova/tcp"
+	"github.com/mia0x75/copycat/tcp"
 )
 
 func main() {

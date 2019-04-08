@@ -4,7 +4,7 @@ import (
 	"net"
 	"sync"
 
-	"github.com/mia0x75/nova/g"
+	"github.com/mia0x75/copycat/g"
 )
 
 type tcpGroups struct {

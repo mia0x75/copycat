@@ -6,7 +6,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/mia0x75/nova/g"
+	"github.com/mia0x75/copycat/g"
 )
 
 func NewControl(ctx *g.Context, opts ...ControlOption) *TcpService {

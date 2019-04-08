@@ -7,18 +7,18 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/mia0x75/nova/agent"
-	"github.com/mia0x75/nova/binlog"
-	"github.com/mia0x75/nova/control"
-	"github.com/mia0x75/nova/g"
-	"github.com/mia0x75/nova/services"
+	"github.com/mia0x75/copycat/agent"
+	"github.com/mia0x75/copycat/binlog"
+	"github.com/mia0x75/copycat/control"
+	"github.com/mia0x75/copycat/g"
+	"github.com/mia0x75/copycat/services"
 )
 
 var (
 	//if debug is true, print stack log
 	debugCmd   = flag.Bool("debug", false, "enable debug, default disable")         //
-	versionCmd = flag.Bool("version", false, "nova version")                        //
-	vCmd       = flag.Bool("v", false, "nova version")                              //
+	versionCmd = flag.Bool("version", false, "copycat version")                     //
+	vCmd       = flag.Bool("v", false, "copycat version")                           //
 	stopCmd    = flag.Bool("stop", false, "stop service")                           //
 	reloadCmd  = flag.Bool("reload", false, "reload service")                       //
 	helpCmd    = flag.Bool("help", false, "help")                                   //
@@ -28,18 +28,11 @@ var (
 	dCmd       = flag.Bool("d", false, "-daemon or -d, run as daemon process")      //
 )
 
-const banner = "\n" +
-	"ooo. .oo.    .ooooo.  oooo    ooo  .oooo.   \n" +
-	"`888P\"Y88b  d88' `88b  `88.  .8'  `P  )88b  \n" +
-	" 888   888  888   888   `88..8'    .oP\"888  \n" +
-	" 888   888  888   888    `888'    d8(  888  \n" +
-	"o888o o888o `Y8bod8P'     `8'     `Y888\"\"8o \n\n"
-
 func runCmd(ctx *g.Context) bool {
 	if *versionCmd || *vCmd || *stopCmd || *reloadCmd || *helpCmd || *hCmd || *statusCmd {
 		// Show version info
 		if *versionCmd || *vCmd {
-			fmt.Print(banner)
+			fmt.Print(g.Banner)
 
 			fmt.Printf("%-11s: %s\n%-11s: %s\n%-11s: %s\n%-11s: %s\n%-11s: %s\n%-11s: %s\n",
 				"Version", g.Version,
@@ -102,7 +95,7 @@ func main() {
 		return
 	}
 
-	fmt.Print(banner)
+	fmt.Print(g.Banner)
 	fmt.Printf("%-11s: %s\n%-11s: %s\n%-11s: %s\n%-11s: %s\n%-11s: %s\n%-11s: %s\n",
 		"Version", g.Version,
 		"Git commit", g.Git,

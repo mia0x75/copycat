@@ -1,4 +1,4 @@
-module github.com/mia0x75/nova
+module github.com/mia0x75/copycat
 
 replace (
 	cloud.google.com/go => github.com/googleapis/google-cloud-go v0.36.0

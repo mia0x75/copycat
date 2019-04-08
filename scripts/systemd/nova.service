@@ -1,5 +1,5 @@
 [Unit]
-Description=nova Service for MariaDB
+Description=copycat Service for MariaDB
 After=network.target
 After=syslog.target
 
@@ -9,10 +9,10 @@ Type=simple
 User=root
 Group=root
 
-PIDFile=/run/nova/nova.pid
-ExecStart=/usr/bin/nova
-ExecStop=/usr/bin/nova -stop
-ExecReload=/usr/bin/nova -service-reload all
+PIDFile=/run/copycat/copycat.pid
+ExecStart=/usr/bin/copycat
+ExecStop=/usr/bin/copycat -stop
+ExecReload=/usr/bin/copycat -service-reload all
 
 [Install]
 WantedBy=multi-user.target
