@@ -12,9 +12,9 @@ import (
 	daemon "github.com/sevlyar/go-daemon"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/mia0x75/nova/file"
-	"github.com/mia0x75/nova/path"
 	"github.com/mia0x75/nova/utils"
+	"github.com/mia0x75/nova/utils/file"
+	"github.com/mia0x75/nova/utils/path"
 )
 
 var ctx *daemon.Context = nil

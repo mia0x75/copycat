@@ -5,8 +5,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/mia0x75/nova/file"
-	"github.com/mia0x75/nova/path"
+	"github.com/mia0x75/nova/utils/path"
 	log "github.com/sirupsen/logrus"
 )
 

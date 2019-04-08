@@ -15,8 +15,8 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/mia0x75/nova/g"
-	"github.com/mia0x75/nova/path"
 	"github.com/mia0x75/nova/services"
+	"github.com/mia0x75/nova/utils/path"
 )
 
 func (h *Binlog) handlerInit() {

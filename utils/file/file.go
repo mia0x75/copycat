@@ -1,4 +1,4 @@
-package utils
+package file
 
 import (
 	"io"
@@ -8,7 +8,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/mia0x75/nova/path"
+	"github.com/mia0x75/nova/utils/path"
 )
 
 // check file is exists
