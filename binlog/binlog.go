@@ -95,7 +95,7 @@ func (h *Binlog) lookStartService() {
 					start := time.Now().Unix()
 					for {
 						if h.lastBinFile == "" {
-							log.Warn("binlog lastBinFile is empty, wait for init")
+							log.Warn("[W] binlog lastBinFile is empty, wait for init")
 							if time.Now().Unix()-start > 3 {
 								log.Panicf("[P] binlog last file is empty")
 							}

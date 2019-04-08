@@ -141,7 +141,7 @@ func (h *Binlog) OnRow(e *canal.RowsEvent) error {
 				if k < rowsLen {
 					oldData[col.Name] = fieldDecode(e.Rows[i][k], &col)
 				} else {
-					log.Warn("unknown line", col.Name)
+					log.Warn("[W] unknown line", col.Name)
 					oldData[col.Name] = nil
 				}
 			}
@@ -150,7 +150,7 @@ func (h *Binlog) OnRow(e *canal.RowsEvent) error {
 				if k < rowsLen {
 					newData[col.Name] = fieldDecode(e.Rows[i+1][k], &col)
 				} else {
-					log.Warn("unknown line", col.Name)
+					log.Warn("[W] unknown line", col.Name)
 					newData[col.Name] = nil
 				}
 			}
@@ -168,7 +168,7 @@ func (h *Binlog) OnRow(e *canal.RowsEvent) error {
 				if k < rowsLen {
 					data[col.Name] = fieldDecode(e.Rows[i][k], &col)
 				} else {
-					log.Warn("unknown line", col.Name)
+					log.Warn("[W] unknown line", col.Name)
 					data[col.Name] = nil
 				}
 			}
