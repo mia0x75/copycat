@@ -115,31 +115,47 @@ func main() {
 	httpService := services.NewHttpService(ctx)
 	tcpService := services.NewTcpService(ctx)
 
+	// agent代理，用于实现集群
 	agentServer := agent.NewAgentServer(
 		ctx,
 		agent.OnEvent(tcpService.SendAll),
 		agent.OnRaw(tcpService.SendRaw),
 	)
 
+	// 核心binlog服务
 	blog := binlog.NewBinlog(
 		ctx,
-		binlog.PosChange(agentServer.SendPos),
-		binlog.OnEvent(agentServer.SendEvent),
+		// pos改变的时候，通过agent server同步给所有的客户端
+		binlog.PosChange(func(data []byte) {
+			packData := services.Pack(agent.CMD_POS, data)
+			agentServer.Sync(packData)
+		}),
+		// 将所有的事件同步给所有的客户端
+		binlog.OnEvent(func(table string, data []byte) {
+			packData := services.Pack(agent.CMD_EVENT, data)
+			agentServer.Sync(packData)
+		}),
 	)
 
+	// 注册服务
 	blog.RegisterService(tcpService)
 	blog.RegisterService(httpService)
+	// 开始binlog进程
 	blog.Start()
 
 	// set agent receive pos callback
 	// 延迟依赖绑定
 	// agent与binlog相互依赖
+	// agent收到leader的pos改变同步信息时，回调到SaveBinlogPosition
+	// agent选leader成功回调到OnLeader上，是为了停止和开启服务，只有leader在工作
 	agent.OnPos(blog.SaveBinlogPosition)(agentServer)
 	agent.OnLeader(blog.OnLeader)(agentServer)
 
+	// 启动agent进程
 	agentServer.Start()
 	defer agentServer.Close()
 
+	// 热更新reload支持
 	var reload = func(name string) {
 		if name == "all" {
 			tcpService.Reload()

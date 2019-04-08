@@ -11,9 +11,9 @@ import (
 
 	daemon "github.com/sevlyar/go-daemon"
 	log "github.com/sirupsen/logrus"
+	"github.com/toolkits/file"
 
 	"github.com/mia0x75/nova/utils"
-	"github.com/mia0x75/nova/utils/file"
 	"github.com/mia0x75/nova/utils/path"
 )
 
@@ -71,7 +71,7 @@ func Init() {
 
 func Release() {
 	// delete pid when exit
-	file.Delete(PID_FILE)
+	file.Remove(PID_FILE)
 	if ctx != nil {
 		// release process context when exit
 		ctx.Release()
@@ -94,8 +94,8 @@ func Usage() {
 // return the unique key
 // if exists, read file and return it
 func GetKey(sessionFile string) string {
-	if file.Exists(sessionFile) {
-		data := file.Read(sessionFile)
+	if file.IsExist(sessionFile) {
+		data, _ := file.ToTrimString(sessionFile)
 		if data != "" {
 			return data
 		}
@@ -103,8 +103,8 @@ func GetKey(sessionFile string) string {
 	//write a new key
 	key := fmt.Sprintf("%d-%s", time.Now().Unix(), utils.RandString(64))
 	dir := path.GetParent(sessionFile)
-	path.Mkdir(dir)
-	n := file.Write(sessionFile, key, false)
+	path.Mkdir(dir) // TODO:
+	n, _ := file.WriteString(sessionFile, key)
 	if n != len(key) {
 		return ""
 	}

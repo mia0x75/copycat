@@ -14,7 +14,6 @@ type Service interface {
 	Close()                                 // 关闭服务
 	Reload()                                // 重新加载服务配置
 	Name() string                           // 返回服务名称
-	SendRaw(data []byte) bool               // 用于发送agent透传的原始数据
 }
 
 const (

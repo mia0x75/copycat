@@ -1,17 +1,21 @@
 package agent
 
 import (
+	"encoding/json"
+	"fmt"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	consul "github.com/hashicorp/consul/api"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/mia0x75/nova/consul"
 	"github.com/mia0x75/nova/g"
 	"github.com/mia0x75/nova/services"
+	mtcp "github.com/mia0x75/nova/tcp"
 )
 
 //agent 所需要做的事情
@@ -24,9 +28,45 @@ import (
 
 // todo 这里还需要一个异常检测机制
 // 定期检测是否有leader在运行，如果没有，尝试强制解锁，然后选出新的leader
-
+// ServiceName 服务名称
 const ServiceName = "binlog-go-agent"
 
+// 服务注册
+const (
+	Registered = 1 << iota
+)
+
+// OnLeaderFunc 回调
+type OnLeaderFunc func(bool)
+
+// OnEventFunc 回调
+type OnEventFunc func(table string, data []byte) bool
+
+// OnRawFunc 回调
+type OnRawFunc func(msg []byte) bool
+
+// TcpService 结构体
+type TcpService struct {
+	Address    string // 监听ip
+	lock       *sync.Mutex
+	statusLock *sync.Mutex
+	ctx        *g.Context
+	listener   *net.Listener
+	wg         *sync.WaitGroup
+	status     int
+	conn       *net.TCPConn
+	buffer     []byte
+	client     *mtcp.Client
+	enable     bool
+	sService   consul.ILeader
+	onLeader   []OnLeaderFunc
+	leader     bool
+	server     *mtcp.Server
+	onEvent    []OnEventFunc
+	onPos      []OnPosFunc
+}
+
+// NewAgentServer 创建实例
 func NewAgentServer(ctx *g.Context, opts ...AgentServerOption) *TcpService {
 	cfg := g.Config().Agent
 	if !cfg.Enabled {
@@ -45,59 +85,39 @@ func NewAgentServer(ctx *g.Context, opts ...AgentServerOption) *TcpService {
 		wg:         new(sync.WaitGroup),
 		listener:   nil,
 		ctx:        ctx,
-		agents:     nil,
 		status:     0,
 		buffer:     make([]byte, 0),
 		enable:     cfg.Enabled,
+		onEvent:    make([]OnEventFunc, 0),
+		onPos:      make([]OnPosFunc, 0),
 	}
-	go tcp.keepalive()
-	tcp.client = newAgentClient(ctx)
+	tcp.client = mtcp.NewClient(ctx.Ctx, mtcp.SetOnMessage(tcp.onClientMessage))
 	// 服务注册
 	strs := strings.Split(cfg.Listen, ":")
 	ip := strs[0]
 	port, _ := strconv.ParseInt(strs[1], 10, 32)
-	conf := &consul.Config{Scheme: "http", Address: cfg.Consul}
-	c, err := consul.NewClient(conf)
-	if err != nil {
-		log.Panicf("%v", err)
-		return nil
-	}
 
-	tcp.service = NewService(
+	tcp.sService = consul.NewLeader(
+		cfg.Consul,
 		cfg.Lock,
 		ServiceName,
 		ip,
 		int(port),
-		c,
 	)
-	tcp.service.Register()
 	for _, f := range opts {
 		f(tcp)
 	}
-	//将tcp.client.OnLeader注册到server的选leader回调
-	OnLeader(tcp.client.OnLeader)(tcp)
-	//将tcp.service.getLeader注册为client获取leader的api
-	GetLeader(tcp.service.getLeader)(tcp.client)
-	//watch监听服务变化
-	tcp.watch = newWatch(
-		c,
-		ServiceName,
-		c.Health(),
-		ip,
-		int(port),
-		onWatch(tcp.service.selectLeader),
-		unlock(tcp.service.Unlock),
-	)
+	tcp.server = mtcp.NewServer(ctx.Ctx, cfg.Listen, mtcp.SetOnServerMessage(tcp.onServerMessage))
 	return tcp
 }
 
-// 设置收到pos的回调函数
+// OnPos 设置收到pos的回调函数
 func OnPos(f OnPosFunc) AgentServerOption {
 	return func(s *TcpService) {
 		if !s.enable {
 			return
 		}
-		s.client.onPos = append(s.client.onPos, f)
+		s.onPos = append(s.onPos, f)
 	}
 }
 
@@ -107,11 +127,11 @@ func OnLeader(f OnLeaderFunc) AgentServerOption {
 			f(true)
 			return
 		}
-		s.service.onleader = append(s.service.onleader, f)
+		s.onLeader = append(s.onLeader, f)
 	}
 }
 
-// agent client 收到事件回调
+// OnEvent 事件回调
 // 这个回调应该来源于service_plugin/tcp
 // 最终被转发到SendAll
 func OnEvent(f OnEventFunc) AgentServerOption {
@@ -119,51 +139,75 @@ func OnEvent(f OnEventFunc) AgentServerOption {
 		if !s.enable {
 			return
 		}
-		s.client.onEvent = append(s.client.onEvent, f)
+		s.onEvent = append(s.onEvent, f)
 	}
 }
 
-// agent client 收到一些其他的事件
-// 原封不动转发到service_plugin/tcp SendRaw
+// OnRaw 原封不动转发到tcp SendRaw
 func OnRaw(f OnRawFunc) AgentServerOption {
 	return func(s *TcpService) {
 		if !s.enable {
 			return
 		}
-		s.client.onRaw = append(s.client.onRaw, f)
 	}
 }
 
+func (tcp *TcpService) onClientMessage(client *mtcp.Client, content []byte) {
+	cmd, data, err := services.Unpack(content)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	switch cmd {
+	case CMD_EVENT:
+		var raw map[string]interface{}
+		err = json.Unmarshal(data, &raw)
+		if err == nil {
+			table := raw["database"].(string) + "." + raw["table"].(string)
+			for _, f := range tcp.onEvent {
+				f(table, data)
+			}
+		}
+	case CMD_POS:
+		for _, f := range tcp.onPos {
+			f(data)
+		}
+	}
+}
+
+func (tcp *TcpService) onServerMessage(node *mtcp.ClientNode, msgID int64, data []byte) {
+}
+
+// Start 启动
 func (tcp *TcpService) Start() {
 	if !tcp.enable {
 		return
 	}
-	go tcp.watch.process()
-	go func() {
-		listen, err := net.Listen("tcp", tcp.Address)
-		if err != nil {
-			log.Errorf("tcp service listen with error: %+v", err)
-			return
+	tcp.server.Start()
+	tcp.sService.Select(func(member *consul.ServiceMember) {
+		log.Infof("current node %v is leader: %v", tcp.Address, member.IsLeader)
+		tcp.leader = member.IsLeader
+		for _, f := range tcp.onLeader {
+			f(member.IsLeader)
 		}
-		tcp.listener = &listen
-		log.Infof("agent service start with: %s", tcp.Address)
-		for {
-			conn, err := listen.Accept()
-			select {
-			case <-tcp.ctx.Ctx.Done():
-				return
-			default:
+		// 连接到leader
+		if !tcp.leader {
+			for {
+				m, err := tcp.sService.Get()
+				if err == nil && m != nil {
+					leaderAddress := fmt.Sprintf("%v:%v", m.ServiceIp, m.Port)
+					log.Infof("connect to leader %v", leaderAddress)
+					tcp.client.Connect(leaderAddress, time.Second*3)
+					break
+				}
+				log.Warnf("leader is not init, try to wait init")
+				time.Sleep(time.Second)
 			}
-			if err != nil {
-				log.Warnf("tcp service accept with error: %+v", err)
-				continue
-			}
-			node := newNode(tcp.ctx, &conn, NodeClose(tcp.agents.remove), NodePro(tcp.agents.append))
-			go node.readMessage()
 		}
-	}()
+	})
 }
 
+// Close 关闭
 func (tcp *TcpService) Close() {
 	if !tcp.enable {
 		return
@@ -174,54 +218,46 @@ func (tcp *TcpService) Close() {
 	if tcp.listener != nil {
 		(*tcp.listener).Close()
 	}
-	tcp.agents.close()
 	log.Debugf("tcp service closed.")
-	tcp.service.Close()
+	tcp.server.Close()
+	tcp.sService.Free()
 }
 
-// binlog的pos发生改变会通知到这里
-// r为压缩过的二进制数据
-// 可以直接写到pos cache缓存文件
-func (tcp *TcpService) SendPos(data []byte) {
-	if !tcp.enable {
-		return
-	}
-	if !tcp.service.leader {
-		return
-	}
-	packData := services.Pack(CMD_POS, data)
-	tcp.agents.asyncSend(packData)
-}
-
-func (tcp *TcpService) SendEvent(table string, data []byte) {
+// Sync 此api提供给binlog通过agent server同步广播发送给所有的client客户端
+func (tcp *TcpService) Sync(data []byte) {
 	if !tcp.enable {
 		return
 	}
 	// 广播给agent client
 	// agent client 再发送给连接到当前service_plugin/tcp的客户端
-	packData := services.Pack(CMD_EVENT, data)
-	tcp.agents.asyncSend(packData)
+	tcp.server.Broadcast(1, data)
 }
 
-// 心跳
-func (tcp *TcpService) keepalive() {
-	if !tcp.enable {
-		return
-	}
-	for {
-		select {
-		case <-tcp.ctx.Ctx.Done():
-			return
-		default:
-		}
-		tcp.agents.asyncSend(packDataTickOk)
-		time.Sleep(time.Second * 3)
-	}
-}
-
+// ShowMembers 显示群集信息
 func (tcp *TcpService) ShowMembers() string {
 	if !tcp.enable {
 		return "agent is not enable"
 	}
-	return tcp.service.ShowMembers()
+	data, err := tcp.sService.GetServices(false) //.getMembers()
+	if data == nil || err != nil {
+		return ""
+	}
+	hostname, err := os.Hostname()
+	if err != nil {
+		hostname = ""
+	}
+	res := fmt.Sprintf("current node: %s(%s)\r\n", hostname, tcp.Address)
+	res += fmt.Sprintf("cluster size: %d node(s)\r\n", len(data))
+	res += fmt.Sprintf("======+=============================================+==========+===============\r\n")
+	res += fmt.Sprintf("%-6s| %-43s | %-8s | %s\r\n", "index", "node", "role", "status")
+	res += fmt.Sprintf("------+---------------------------------------------+----------+---------------\r\n")
+	for i, member := range data {
+		role := "follower"
+		if member.IsLeader {
+			role = "leader"
+		}
+		res += fmt.Sprintf("%-6d| %-43s | %-8s | %s\r\n", i, fmt.Sprintf("%s(%s:%d)", "", member.ServiceIp, member.Port), role, member.Status)
+	}
+	res += fmt.Sprintf("------+---------------------------------------------+----------+---------------\r\n")
+	return res
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/mia0x75/nova/utils/path"
 	log "github.com/sirupsen/logrus"
+	"github.com/toolkits/file"
 )
 
 func init() {
@@ -20,6 +21,7 @@ func init() {
 }
 
 // test SaveBinlogPostionCache api
+// 基础的保存pos到cache和读取cache相关api测试
 func TestBinlogHandler_SaveBinlogPostionCache(t *testing.T) {
 	h := &Binlog{
 		statusLock: new(sync.Mutex),
@@ -31,7 +33,7 @@ func TestBinlogHandler_SaveBinlogPostionCache(t *testing.T) {
 	if err != nil {
 		t.Errorf("binlog open cache file error: %+v", err)
 	}
-	defer file.Delete(path.CurrentPath + "/cache_test.pos")
+	defer file.Remove(path.CurrentPath + "/cache_test.pos")
 
 	binfile := "mysql-bin.000059"
 	pos := int64(123456)

@@ -56,7 +56,7 @@ build: fmt
 	@echo "\033[92mBuilding ...\033[0m"
 	@bash ./genver.sh $(GO_VERSION_MIN)
 	@ret=0 && for d in $$(go list -f '{{if (eq .Name "main")}}{{.ImportPath}}{{end}}' ./); do \
-		CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -mod=readonly -ldflags="-s -w" -race -o bin/$(BINARY) $$d || ret=$$? ; \
+		CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -mod=readonly -ldflags="-s -w" -race -o bin/$(BINARY) $$d || ret=$$? ; \
 	done ; exit $$ret
 	@echo "build Success!"
 
