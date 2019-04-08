@@ -60,6 +60,13 @@ func (h *Binlog) setHandler() {
 	cfg := canal.NewDefaultConfig()
 	cfg.Addr = fmt.Sprintf("%s:%d", g.Config().Database.Host, g.Config().Database.Port)
 	cfg.User = g.Config().Database.User
+	cfg.Password = g.Config().Database.Password
+	cfg.Charset = g.Config().Database.Charset
+	cfg.ServerID = g.Config().Database.ServerID
+	cfg.Flavor = g.Config().Database.Flavor
+	cfg.HeartbeatPeriod = time.Duration(g.Config().Database.HeartbeatPeriod)
+	cfg.ReadTimeout = time.Duration(g.Config().Database.ReadTimeout)
+
 	handler, err := canal.NewCanal(cfg)
 	if err != nil {
 		log.Panicf("new canal with error：%+v", err)

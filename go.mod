@@ -23,7 +23,7 @@ replace (
 
 require (
 	github.com/BurntSushi/toml v0.3.1
-	github.com/go-sql-driver/mysql v1.4.1 // indirect
+	github.com/go-sql-driver/mysql v1.4.1
 	github.com/hashicorp/consul/api v1.0.1
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0 // indirect
 	github.com/sevlyar/go-daemon v0.1.4
