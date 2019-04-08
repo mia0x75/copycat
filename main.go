@@ -3,15 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
-	"runtime"
 
 	_ "github.com/go-sql-driver/mysql"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/mia0x75/mac/hack"
 	"github.com/mia0x75/nova/agent"
-	"github.com/mia0x75/nova/app"
 	"github.com/mia0x75/nova/binlog"
 	"github.com/mia0x75/nova/control"
 	"github.com/mia0x75/nova/g"
@@ -39,21 +35,25 @@ const banner = "\n" +
 	" 888   888  888   888    `888'    d8(  888  \n" +
 	"o888o o888o `Y8bod8P'     `8'     `Y888\"\"8o \n"
 
-func runCmd(ctx *app.Context) bool {
+func runCmd(ctx *g.Context) bool {
 	if *versionCmd || *vCmd || *stopCmd || *reloadCmd || *helpCmd || *hCmd || *statusCmd {
 		// Show version info
 		if *versionCmd || *vCmd {
 			fmt.Print(banner)
 
-			log.Infof("git commit: %s", g.Version)
-			log.Infof("build time: %s", g.Compile)
-			log.Infof("system: %s/%s", runtime.GOOS, runtime.GOARCH)
-			log.Infof("version: %s", app.VERSION)
+			fmt.Printf("%-11s: %s\n%-11s: %s\n%-11s: %s\n%-11s: %s\n%-11s: %s\n%-11s: %s\n",
+				"Version", g.Version,
+				"Git commit", g.Git,
+				"Compile", g.Compile,
+				"Distro", g.Distro,
+				"Kernel", g.Kernel,
+				"Branch", g.Branch,
+			)
 			return true
 		}
 		// Show usage
 		if *helpCmd || *hCmd {
-			app.Usage()
+			g.Usage()
 			return true
 		}
 		cli := control.NewClient(ctx)
@@ -85,29 +85,39 @@ func main() {
 			fmt.Printf("%+v", err)
 		}
 	}()
+
+	cfg := g.ParseConfig("")
+	fmt.Printf("%+v\n", cfg.Log)
+	fmt.Printf("%+v\n", cfg.Database)
+	fmt.Printf("%+v\n", cfg.HTTP)
+	fmt.Printf("%+v\n", cfg.TCP)
+	fmt.Printf("%+v\n", cfg.Agent)
+
 	// app init
-	app.DEBUG = *debugCmd
-	app.Init()
+	g.Init()
 	// clear some resource after exit
-	defer app.Release()
-	ctx := app.NewContext()
+	defer g.Release()
+	ctx := g.NewContext()
 	// if use cmd params
 	if runCmd(ctx) {
 		return
 	}
 
 	// return true is parent process
-	if app.DaemonProcess(*daemonCmd || *dCmd) {
+	if g.DaemonProcess(*daemonCmd || *dCmd) {
 		return
 	}
 
 	fmt.Println(banner)
 
-	fmt.Printf("git commit: %s\n", hack.Version)
-	fmt.Printf("build time: %s\n", hack.Compile)
-	fmt.Printf("system: %s/%s\n", runtime.GOOS, runtime.GOARCH)
-	fmt.Printf("process id: %d\n", os.Getpid())
-	fmt.Printf("version: %s\n", app.VERSION)
+	fmt.Printf("%-11s: %s\n%-11s: %s\n%-11s: %s\n%-11s: %s\n%-11s: %s\n%-11s: %s\n",
+		"Version", g.Version,
+		"Git commit", g.Git,
+		"Compile", g.Compile,
+		"Distro", g.Distro,
+		"Kernel", g.Kernel,
+		"Branch", g.Branch,
+	)
 
 	httpService := services.NewHttpService(ctx)
 	tcpService := services.NewTcpService(ctx)

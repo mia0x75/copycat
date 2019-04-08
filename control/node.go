@@ -9,11 +9,11 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/mia0x75/nova/app"
+	"github.com/mia0x75/nova/g"
 	"github.com/mia0x75/nova/services"
 )
 
-func newNode(ctx *app.Context, conn *net.Conn, opts ...nodeOption) *TcpClientNode {
+func newNode(ctx *g.Context, conn *net.Conn, opts ...nodeOption) *TcpClientNode {
 	node := &TcpClientNode{
 		conn:    conn,
 		recvBuf: make([]byte, 0),

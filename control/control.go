@@ -6,17 +6,17 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/mia0x75/nova/app"
+	"github.com/mia0x75/nova/g"
 )
 
-func NewControl(ctx *app.Context, opts ...ControlOption) *TcpService {
+func NewControl(ctx *g.Context, opts ...ControlOption) *TcpService {
 	tcp := &TcpService{
-		Address:  ctx.AppConfig.ControlListen,
+		Address:  ctx.Config.Control.Listen,
 		lock:     new(sync.Mutex),
 		wg:       new(sync.WaitGroup),
 		listener: nil,
 		ctx:      ctx,
-		token:    app.GetKey(app.TOKEN_FILE),
+		token:    g.GetKey(g.TOKEN_FILE),
 	}
 	for _, f := range opts {
 		f(tcp)

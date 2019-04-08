@@ -7,7 +7,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/mia0x75/nova/app"
+	"github.com/mia0x75/nova/g"
 	"github.com/mia0x75/nova/services"
 )
 
@@ -15,8 +15,8 @@ type control struct {
 	conn *net.TCPConn
 }
 
-func NewClient(ctx *app.Context) *control {
-	tcpAddr, err := net.ResolveTCPAddr("tcp4", ctx.AppConfig.ControlListen)
+func NewClient(ctx *g.Context) *control {
+	tcpAddr, err := net.ResolveTCPAddr("tcp4", ctx.Config.Control.Listen)
 	if err != nil {
 		log.Panicf("start control with error: %+v", err)
 	}

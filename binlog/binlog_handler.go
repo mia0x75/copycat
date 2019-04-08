@@ -3,6 +3,7 @@ package binlog
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"sync/atomic"
@@ -13,14 +14,14 @@ import (
 	"github.com/siddontang/go-mysql/replication"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/mia0x75/nova/app"
+	"github.com/mia0x75/nova/g"
 	"github.com/mia0x75/nova/path"
 	"github.com/mia0x75/nova/services"
 )
 
 func (h *Binlog) handlerInit() {
 	var err error
-	mysqlBinlogCacheFile := app.MASTER_INFO_FILE
+	mysqlBinlogCacheFile := g.MASTER_INFO_FILE
 	path.Mkdir(path.GetParent(mysqlBinlogCacheFile))
 	flag := os.O_RDWR | os.O_CREATE | os.O_SYNC
 	h.cacheHandler, err = os.OpenFile(mysqlBinlogCacheFile, flag, 0755)
@@ -39,27 +40,26 @@ func (h *Binlog) handlerInit() {
 	}
 	log.Debugf("master pos: %+v", currentPos)
 	if f != "" && p > 0 {
-		h.Config.BinFile = f
-		h.Config.BinPos = uint32(p)
-		if f == currentPos.Name && h.Config.BinPos > currentPos.Pos {
+		h.Config.BinlogFile = f
+		h.Config.BinlogPos = uint32(p)
+		if f == currentPos.Name && h.Config.BinlogPos > currentPos.Pos {
 			//pos set error, auto start form current pos
-			h.Config.BinPos = currentPos.Pos
-			log.Warnf("pos set error, auto start form: %d", h.Config.BinPos)
+			h.Config.BinlogPos = currentPos.Pos
+			log.Warnf("pos set error, auto start form: %d", h.Config.BinlogPos)
 		}
 	} else {
-		h.Config.BinFile = currentPos.Name
-		h.Config.BinPos = currentPos.Pos
+		h.Config.BinlogFile = currentPos.Name
+		h.Config.BinlogPos = currentPos.Pos
 	}
-	h.lastBinFile = h.Config.BinFile
-	h.lastPos = uint32(h.Config.BinPos)
+	h.lastBinFile = h.Config.BinlogFile
+	h.lastPos = uint32(h.Config.BinlogPos)
 	log.Debugf("current pos: (%+v, %+v)", h.lastBinFile, h.lastPos)
 }
 
 func (h *Binlog) setHandler() {
-	cfg, err := canal.NewConfigWithFile(app.DB_CONFIG_FILE)
-	if err != nil {
-		log.Panicf("new canal config with error：%+v", err)
-	}
+	cfg := canal.NewDefaultConfig()
+	cfg.Addr = fmt.Sprintf("%s:%d", g.Config().Database.Host, g.Config().Database.Port)
+	cfg.User = g.Config().Database.User
 	handler, err := canal.NewCanal(cfg)
 	if err != nil {
 		log.Panicf("new canal with error：%+v", err)
@@ -177,24 +177,24 @@ func (h *Binlog) OnRotate(e *replication.RotateEvent) error {
 	return nil
 }
 
-func (h *Binlog) OnDDL(p mysql.Position, e *canal.DDLEvent) error {
-	log.Infof("schema change detected, db: %s, table: %s, action: %s.", e.Schema, e.Table, e.Action)
-	query := make(map[string]interface{})
-	query["query"] = e.Query
+// func (h *Binlog) OnDDL(p mysql.Position, e *canal.DDLEvent) error {
+// 	log.Infof("schema change detected, db: %s, table: %s, action: %s.", e.Schema, e.Table, e.Action)
+// 	query := make(map[string]interface{})
+// 	query["query"] = e.Query
 
-	event := make(map[string]interface{})
-	event["data"] = query
+// 	event := make(map[string]interface{})
+// 	event["data"] = query
 
-	data := make(map[string]interface{})
-	data["database"] = e.Schema
-	data["event_type"] = e.Action
-	data["time"] = time.Now().Unix()
-	data["table"] = e.Table
-	data["event_index"] = atomic.AddInt64(&h.EventIndex, int64(1))
-	data["event"] = event
-	h.notify(data)
-	return nil
-}
+// 	data := make(map[string]interface{})
+// 	data["database"] = e.Schema
+// 	data["event_type"] = e.Action
+// 	data["time"] = time.Now().Unix()
+// 	data["table"] = e.Table
+// 	data["event_index"] = atomic.AddInt64(&h.EventIndex, int64(1))
+// 	data["event"] = event
+// 	h.notify(data)
+// 	return nil
+// }
 
 func (h *Binlog) OnXID(p mysql.Position) error {
 	log.Debugf("OnXID event fired, %+v.", p)

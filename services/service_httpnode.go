@@ -6,11 +6,11 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/mia0x75/nova/app"
+	"github.com/mia0x75/nova/g"
 	"github.com/mia0x75/nova/http"
 )
 
-func newHttpNode(ctx *app.Context, url string) *httpNode {
+func newHttpNode(ctx *g.Context, url string) *httpNode {
 	return &httpNode{
 		url:       url,
 		sendQueue: make(chan string, httpMaxSendQueue),

@@ -3,16 +3,16 @@ package services
 import (
 	log "github.com/sirupsen/logrus"
 
-	"github.com/mia0x75/nova/app"
+	"github.com/mia0x75/nova/g"
 )
 
-func newHttpGroup(ctx *app.Context, groupConfig app.HttpNodeConfig) *httpGroup {
+func newHttpGroup(ctx *g.Context, groupConfig *g.HTTPGroupConfig) *httpGroup {
 	group := &httpGroup{
 		name:   groupConfig.Name,
 		filter: groupConfig.Filter,
-		nodes:  make(httpNodes, len(groupConfig.Nodes)),
+		nodes:  make(httpNodes, len(groupConfig.Endpoints)),
 	}
-	for i, url := range groupConfig.Nodes {
+	for i, url := range groupConfig.Endpoints {
 		group.nodes[i] = newHttpNode(ctx, url)
 	}
 	return group

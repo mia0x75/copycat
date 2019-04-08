@@ -5,7 +5,7 @@ import (
 	"net"
 	"sync"
 
-	"github.com/mia0x75/nova/app"
+	"github.com/mia0x75/nova/g"
 	"github.com/mia0x75/nova/services"
 )
 
@@ -30,7 +30,7 @@ type TcpClientNode struct {
 	recvBuf    []byte    // 读缓冲区
 	status     int
 	wg         *sync.WaitGroup
-	ctx        *app.Context
+	ctx        *g.Context
 	lock       *sync.Mutex // 互斥锁，修改资源时锁定
 	stop       StopFunc
 	reload     ReloadFunc
@@ -40,7 +40,7 @@ type TcpClientNode struct {
 type TcpService struct {
 	Address    string
 	lock       *sync.Mutex
-	ctx        *app.Context
+	ctx        *g.Context
 	listener   *net.Listener
 	wg         *sync.WaitGroup
 	token      string

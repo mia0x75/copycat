@@ -6,15 +6,15 @@ import (
 
 	"github.com/siddontang/go-mysql/canal"
 
-	"github.com/mia0x75/nova/app"
+	"github.com/mia0x75/nova/g"
 	"github.com/mia0x75/nova/services"
 )
 
 type Binlog struct {
 	canal.DummyEventHandler                             // github.com/siddontang/go-mysql interface
-	Config                  *app.MysqlConfig            // config
+	Config                  *g.DatabaseConfig           // config
 	handler                 *canal.Canal                // github.com/siddontang/go-mysql mysql protocol handler
-	ctx                     *app.Context                // context, like that use for wait coroutine exit
+	ctx                     *g.Context                  // context, like that use for wait coroutine exit
 	wg                      *sync.WaitGroup             // use for wait coroutine exit
 	lock                    *sync.Mutex                 // lock
 	statusLock              *sync.Mutex                 // status lock

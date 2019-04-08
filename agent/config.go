@@ -4,11 +4,7 @@ import (
 	"net"
 	"sync"
 
-	"github.com/BurntSushi/toml"
-	log "github.com/sirupsen/logrus"
-
-	"github.com/mia0x75/nova/app"
-	"github.com/mia0x75/nova/file"
+	"github.com/mia0x75/nova/g"
 	"github.com/mia0x75/nova/services"
 )
 
@@ -62,7 +58,7 @@ type tcpClientNode struct {
 	connectTime      int64       // 连接成功的时间戳
 	status           int
 	wg               *sync.WaitGroup
-	ctx              *app.Context
+	ctx              *g.Context
 	lock             *sync.Mutex // 互斥锁，修改资源时锁定
 	onclose          []NodeFunc
 	agents           tcpClients
@@ -85,7 +81,7 @@ type TcpService struct {
 	Address    string // 监听ip
 	lock       *sync.Mutex
 	statusLock *sync.Mutex
-	ctx        *app.Context
+	ctx        *g.Context
 	listener   *net.Listener
 	wg         *sync.WaitGroup
 	agents     tcpClients
@@ -113,18 +109,4 @@ type AgentConfig struct {
 	Lock          string `toml:"lock"`
 	AgentListen   string `toml:"agent_listen"`
 	ConsulAddress string `toml:"consul_address"`
-}
-
-func getConfig() (*AgentConfig, error) {
-	var config AgentConfig
-	configFile := app.AGENT_CONFIG_FILE
-	if !file.Exists(configFile) {
-		log.Errorf("config file not found: %s", configFile)
-		return nil, app.ErrorFileNotFound
-	}
-	if _, err := toml.DecodeFile(configFile, &config); err != nil {
-		log.Println(err)
-		return nil, app.ErrorFileParse
-	}
-	return &config, nil
 }

@@ -2,11 +2,6 @@ package app
 
 import (
 	"time"
-
-	"github.com/BurntSushi/toml"
-	log "github.com/sirupsen/logrus"
-
-	"github.com/mia0x75/nova/file"
 )
 
 type AppConfig struct {
@@ -72,20 +67,3 @@ type ConsulAddr struct {
 
 // debug mode, default is false
 var DEBUG = false
-
-func GetAppConfig() (*AppConfig, error) {
-	var appConfig AppConfig
-	configFile := APP_CONFIG_FILE
-	if !file.Exists(configFile) {
-		log.Errorf("config file %s does not exists", configFile)
-		return nil, ErrorFileNotFound
-	}
-	if _, err := toml.DecodeFile(configFile, &appConfig); err != nil {
-		log.Errorf("config file parse with error: %+v", err)
-		return nil, ErrorFileParse
-	}
-	if appConfig.TimeZone == "" {
-		appConfig.TimeZone = "Local"
-	}
-	return &appConfig, nil
-}

@@ -3,10 +3,10 @@ package services
 import (
 	"sync"
 
-	"github.com/mia0x75/nova/app"
+	"github.com/mia0x75/nova/g"
 )
 
-func newTcpGroup(group app.TcpGroupConfig) *tcpGroup {
+func newTcpGroup(group *g.TCPGroupConfig) *tcpGroup {
 	g := &tcpGroup{
 		name:   group.Name,
 		filter: group.Filter,

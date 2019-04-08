@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mia0x75/nova/app"
+	"github.com/mia0x75/nova/g"
 )
 
 type Service interface {
@@ -60,7 +60,7 @@ type HttpService struct {
 	groups   httpGroups    //
 	lock     *sync.Mutex   // 互斥锁，修改资源时锁定
 	timeTick time.Duration // 故障检测的时间间隔
-	ctx      *app.Context  // *context.Context
+	ctx      *g.Context    // *context.Context
 	status   int           //
 }
 
@@ -68,7 +68,7 @@ type httpNode struct {
 	url       string      // url
 	sendQueue chan string // 发送channel
 	lock      *sync.Mutex // 互斥锁，修改资源时锁定
-	ctx       *app.Context
+	ctx       *g.Context
 	wg        *sync.WaitGroup
 }
 
@@ -85,7 +85,7 @@ type tcpClientNode struct {
 	connectTime      int64           // 连接成功的时间戳
 	status           int             //
 	wg               *sync.WaitGroup //
-	ctx              *app.Context    //
+	ctx              *g.Context      //
 	lock             *sync.Mutex     // 互斥锁，修改资源时锁定
 	onclose          []NodeFunc
 	onpro            SetProFunc
@@ -107,10 +107,10 @@ type tcpGroup struct {
 type TcpService struct {
 	Service
 	Ip          string      // 监听ip
-	Port        int         // 监听端口
+	Port        uint16      // 监听端口
 	lock        *sync.Mutex // 互斥锁，修改资源时锁定
 	statusLock  *sync.Mutex
-	ctx         *app.Context    // *context.Context
+	ctx         *g.Context      // *context.Context
 	listener    *net.Listener   //
 	wg          *sync.WaitGroup //
 	ServiceIp   string

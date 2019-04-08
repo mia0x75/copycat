@@ -4,22 +4,22 @@ import (
 	"net"
 	"sync"
 
-	"github.com/mia0x75/nova/app"
+	"github.com/mia0x75/nova/g"
 )
 
 type tcpGroups struct {
 	g    map[string]*tcpGroup
 	lock *sync.Mutex
-	ctx  *app.Context
+	ctx  *g.Context
 }
 
-func newGroups(ctx *app.Context) *tcpGroups {
+func newGroups(ctx *g.Context) *tcpGroups {
 	g := &tcpGroups{
 		lock: new(sync.Mutex),
 		g:    make(map[string]*tcpGroup),
 		ctx:  ctx,
 	}
-	for _, group := range ctx.TcpConfig.Groups {
+	for _, group := range ctx.Config.TCP.Groups {
 		tcpGroup := newTcpGroup(group)
 		g.add(tcpGroup)
 	}
@@ -28,7 +28,7 @@ func newGroups(ctx *app.Context) *tcpGroups {
 
 func (groups *tcpGroups) reload() {
 	groups.close()
-	for _, group := range groups.ctx.TcpConfig.Groups {
+	for _, group := range groups.ctx.Config.TCP.Groups {
 		tcpGroup := newTcpGroup(group)
 		groups.add(tcpGroup)
 	}

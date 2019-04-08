@@ -2,29 +2,30 @@ package services
 
 import (
 	"sync"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/mia0x75/nova/app"
+	"github.com/mia0x75/nova/g"
 )
 
 // 创建一个新的http服务
-func NewHttpService(ctx *app.Context) *HttpService {
-	log.Debugf("start http service with config: %+v", ctx.HttpConfig)
-	if !ctx.HttpConfig.Enable {
+func NewHttpService(ctx *g.Context) *HttpService {
+	log.Debugf("start http service with config: %+v", ctx.Config.HTTP)
+	if !ctx.Config.HTTP.Enabled {
 		return &HttpService{
 			status: 0,
 		}
 	}
-	gc := len(ctx.HttpConfig.Groups)
+	gc := len(ctx.Config.HTTP.Groups)
 	client := &HttpService{
 		lock:     new(sync.Mutex),
 		groups:   make(httpGroups, gc),
 		status:   serviceEnable,
-		timeTick: ctx.HttpConfig.TimeTick,
+		timeTick: time.Duration(ctx.Config.HTTP.TimeTick) * time.Second,
 		ctx:      ctx,
 	}
-	for _, groupConfig := range ctx.HttpConfig.Groups {
+	for _, groupConfig := range ctx.Config.HTTP.Groups {
 		httpGroup := newHttpGroup(ctx, groupConfig)
 		client.lock.Lock()
 		client.groups.add(httpGroup)
@@ -57,11 +58,11 @@ func (client *HttpService) Close() {
 }
 
 func (client *HttpService) Reload() {
-	client.ctx.ReloadHttpConfig()
+	client.ctx.Reload()
 	log.Debug("http service reloading...")
 
 	client.status = 0
-	if client.ctx.HttpConfig.Enable {
+	if client.ctx.Config.HTTP.Enabled {
 		client.status = serviceEnable
 	}
 
@@ -69,7 +70,7 @@ func (client *HttpService) Reload() {
 		client.groups.delete(group)
 	}
 
-	for _, groupConfig := range client.ctx.HttpConfig.Groups {
+	for _, groupConfig := range client.ctx.Config.HTTP.Groups {
 		httpGroup := newHttpGroup(client.ctx, groupConfig)
 		client.lock.Lock()
 		client.groups.add(httpGroup)

@@ -1,17 +1,15 @@
-package app
+package g
 
 import (
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"runtime"
 	"strings"
 	"time"
 
-	"github.com/BurntSushi/toml"
-	"github.com/sevlyar/go-daemon"
+	daemon "github.com/sevlyar/go-daemon"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/mia0x75/nova/file"
@@ -41,15 +39,12 @@ func Init() {
 		QuoteEmptyFields: true,
 		FullTimestamp:    true,
 	})
-	// set log context hook
-	log.SetLevel(log.DebugLevel)
-
 	// write pid file
 	data := []byte(fmt.Sprintf("%d", os.Getpid()))
 	ioutil.WriteFile(PID_FILE, data, 0644)
-	// get app config
-	appConfig, _ := GetAppConfig()
-	log.SetLevel(log.Level(appConfig.LogLevel))
+	if level, err := log.ParseLevel(Config().Log.Level); err == nil {
+		log.SetLevel(level)
+	}
 	// run pprof
 	go func() {
 		//http://localhost:6060/debug/pprof/  内存性能分析工具
@@ -64,12 +59,12 @@ func Init() {
 
 		//下载文件 http://localhost:6060/debug/pprof/profile
 		//分析 go tool pprof -web /Users/yuyi/Downloads/profile
-		if appConfig.PprofListen != "" {
-			http.ListenAndServe(appConfig.PprofListen, nil)
-		}
+		// if appConfig.PprofListen != "" {
+		// 	http.ListenAndServe(appConfig.PprofListen, nil)
+		// }
 	}()
 	// set timezone
-	time.LoadLocation(appConfig.TimeZone)
+	time.LoadLocation(Config().TimeZone)
 	// set cpu num
 	runtime.GOMAXPROCS(runtime.NumCPU()) //指定cpu为多核运行 旧版本兼容
 }
@@ -99,7 +94,6 @@ func Usage() {
 // return the unique key
 // if exists, read file and return it
 func GetKey(sessionFile string) string {
-	log.Debugf("key file: %s", sessionFile)
 	if file.Exists(sessionFile) {
 		data := file.Read(sessionFile)
 		if data != "" {
@@ -146,62 +140,4 @@ func DaemonProcess(d bool) bool {
 		return false
 	}
 	return false
-}
-
-func getHttpConfig() (*HttpConfig, error) {
-	var config HttpConfig
-	configFile := HTTP_CONFIG_FILE
-	if !file.Exists(configFile) {
-		log.Warnf("config file %s does not exists", configFile)
-		return nil, ErrorFileNotFound
-	}
-	if _, err := toml.DecodeFile(configFile, &config); err != nil {
-		log.Println(err)
-		return nil, ErrorFileParse
-	}
-	if config.TimeTick <= 0 {
-		config.TimeTick = 1
-	}
-	return &config, nil
-}
-
-func getTcpConfig() (*TcpConfig, error) {
-	configFile := TCP_CONFIG_FILE
-	var err error
-	if !file.Exists(configFile) {
-		log.Warnf("config %s does not exists", configFile)
-		return nil, ErrorFileNotFound
-	}
-	var tcpConfig TcpConfig
-	if _, err = toml.DecodeFile(configFile, &tcpConfig); err != nil {
-		log.Println(err)
-		return nil, ErrorFileParse
-	}
-	if tcpConfig.ServiceIp == "" {
-		tcpConfig.ServiceIp, err = utils.Local()
-		if err != nil {
-			log.Panicf("can not get local ip, please set service ip(service_ip) in file %s", configFile)
-		}
-	}
-	if tcpConfig.ServiceIp == "" {
-		log.Panicf("service ip can not be empty (config file: %s)", configFile)
-	}
-	if tcpConfig.Port <= 0 {
-		log.Panicf("service port can not be 0 (config file: %s)", configFile)
-	}
-	return &tcpConfig, nil
-}
-
-func getMysqlConfig() (*MysqlConfig, error) {
-	var appConfig MysqlConfig
-	configFile := DB_CONFIG_FILE
-	if !file.Exists(configFile) {
-		log.Errorf("config file %s not found", configFile)
-		return nil, ErrorFileNotFound
-	}
-	if _, err := toml.DecodeFile(configFile, &appConfig); err != nil {
-		log.Println(err)
-		return nil, ErrorFileParse
-	}
-	return &appConfig, nil
 }

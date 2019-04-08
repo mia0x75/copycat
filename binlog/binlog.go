@@ -8,13 +8,13 @@ import (
 	"github.com/siddontang/go-mysql/mysql"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/mia0x75/nova/app"
+	"github.com/mia0x75/nova/g"
 	"github.com/mia0x75/nova/services"
 )
 
-func NewBinlog(ctx *app.Context, opts ...BinlogOption) *Binlog {
+func NewBinlog(ctx *g.Context, opts ...BinlogOption) *Binlog {
 	binlog := &Binlog{
-		Config:           ctx.MysqlConfig,                   //
+		Config:           ctx.Config.Database,               //
 		wg:               new(sync.WaitGroup),               //
 		lock:             new(sync.Mutex),                   //
 		statusLock:       new(sync.Mutex),                   //

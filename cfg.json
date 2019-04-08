@@ -2,18 +2,22 @@
 	"log": {
 		"level": "debug"
 	},
-	"databases": {
+	"time_zone": "Local",
+	"control": {
+		"listen": "127.0.0.1: 6061"
+	},
+	"database": {
 		"host": "127.0.0.1",
 		"port": 3306,
 		"user": "replicate",
 		"password": "123456",
 		"charset": "utf8mb4",
-		"server_id": 9999,
+		"server_id": 987654321,
 		"flavor": "mariadb",
 		"heartbeat_period": 30000000000,
 		"read_timeout": 0,
-		"bin_file": "mysql-bin.000001",
-		"bin_pos": 4
+		"binlog_file": "mysql-bin.000001",
+		"binlog_pos": 4
 	},
 	"http": {
 		"enable": "true",
@@ -44,7 +48,8 @@
 	},
 	"tcp": {
 		"enable": true,
-		"listen": "0.0.0.0",
+		"addr": "0.0.0.0",
+		"service_ip": "127.0.0.1",
 		"port": 9990,
 		"groups": [
 			{
@@ -57,10 +62,10 @@
 			}
 		]
 	},
-	"cluster": {
+	"agent": {
 		"enable": false,
-		"listen": "0.0.0.0",
-		"port": 9999,
-		"service_ip": "192.168.0.105"
+		"lock": "agent_lock",
+		"listen": "0.0.0.0:9999",
+		"consul": "127.0.0.1:8500"
 	}
 }

@@ -10,7 +10,7 @@ import (
 	consul "github.com/hashicorp/consul/api"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/mia0x75/nova/app"
+	"github.com/mia0x75/nova/g"
 	"github.com/mia0x75/nova/services"
 )
 
@@ -25,13 +25,13 @@ import (
 // todo 这里还需要一个异常检测机制
 // 定期检测是否有leader在运行，如果没有，尝试强制解锁，然后选出新的leader
 
-const ServiceName = "wing-binlog-go-agent"
+const ServiceName = "binlog-go-agent"
 
-func NewAgentServer(ctx *app.Context, opts ...AgentServerOption) *TcpService {
-	config, _ := getConfig()
-	if !config.Enable {
+func NewAgentServer(ctx *g.Context, opts ...AgentServerOption) *TcpService {
+	cfg := g.Config().Agent
+	if !cfg.Enabled {
 		s := &TcpService{
-			enable: config.Enable,
+			enable: cfg.Enabled,
 		}
 		for _, f := range opts {
 			f(s)
@@ -39,7 +39,7 @@ func NewAgentServer(ctx *app.Context, opts ...AgentServerOption) *TcpService {
 		return s
 	}
 	tcp := &TcpService{
-		Address:    config.AgentListen,
+		Address:    cfg.Listen,
 		lock:       new(sync.Mutex),
 		statusLock: new(sync.Mutex),
 		wg:         new(sync.WaitGroup),
@@ -48,15 +48,15 @@ func NewAgentServer(ctx *app.Context, opts ...AgentServerOption) *TcpService {
 		agents:     nil,
 		status:     0,
 		buffer:     make([]byte, 0),
-		enable:     config.Enable,
+		enable:     cfg.Enabled,
 	}
 	go tcp.keepalive()
 	tcp.client = newAgentClient(ctx)
 	// 服务注册
-	strs := strings.Split(config.AgentListen, ":")
+	strs := strings.Split(cfg.Listen, ":")
 	ip := strs[0]
 	port, _ := strconv.ParseInt(strs[1], 10, 32)
-	conf := &consul.Config{Scheme: "http", Address: config.ConsulAddress}
+	conf := &consul.Config{Scheme: "http", Address: cfg.Consul}
 	c, err := consul.NewClient(conf)
 	if err != nil {
 		log.Panicf("%v", err)
@@ -64,7 +64,7 @@ func NewAgentServer(ctx *app.Context, opts ...AgentServerOption) *TcpService {
 	}
 
 	tcp.service = NewService(
-		config.Lock,
+		cfg.Lock,
 		ServiceName,
 		ip,
 		int(port),

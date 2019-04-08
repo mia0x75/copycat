@@ -9,7 +9,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/mia0x75/nova/app"
+	"github.com/mia0x75/nova/g"
 	"github.com/mia0x75/nova/services"
 )
 
@@ -19,7 +19,7 @@ import (
 // 连接后，server端的pos change事件就会通知到 client 端
 
 type AgentClient struct {
-	ctx        *app.Context
+	ctx        *g.Context
 	onPos      []OnPosFunc
 	buffer     []byte
 	onEvent    []OnEventFunc
@@ -42,7 +42,7 @@ func GetLeader(f getLeaferFunc) AgentClientOption {
 	}
 }
 
-func newAgentClient(ctx *app.Context, opts ...AgentClientOption) *AgentClient {
+func newAgentClient(ctx *g.Context, opts ...AgentClientOption) *AgentClient {
 	c := &AgentClient{
 		ctx:        ctx,
 		buffer:     make([]byte, 0),

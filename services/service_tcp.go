@@ -8,34 +8,34 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/mia0x75/nova/app"
+	"github.com/mia0x75/nova/g"
 )
 
-func NewTcpService(ctx *app.Context) *TcpService {
-	g := newGroups(ctx)
+func NewTcpService(ctx *g.Context) *TcpService {
+	group := newGroups(ctx)
 	t := newTcpService(ctx,
-		SetSendAll(g.sendAll),
-		SetSendRaw(g.asyncSend),
-		SetOnConnect(g.onConnect),
-		SetOnClose(g.close),
-		SetKeepalive(g.asyncSend),
-		SetReload(g.reload),
+		SetSendAll(group.sendAll),
+		SetSendRaw(group.asyncSend),
+		SetOnConnect(group.onConnect),
+		SetOnClose(group.close),
+		SetKeepalive(group.asyncSend),
+		SetReload(group.reload),
 	)
 	return t
 }
 
-func newTcpService(ctx *app.Context, opts ...TcpServiceOption) *TcpService {
+func newTcpService(ctx *g.Context, opts ...TcpServiceOption) *TcpService {
 	tcp := &TcpService{
-		Ip:          ctx.TcpConfig.Listen,
-		Port:        ctx.TcpConfig.Port,
+		Ip:          ctx.Config.TCP.Addr,
+		Port:        ctx.Config.TCP.Port,
 		lock:        new(sync.Mutex),
 		statusLock:  new(sync.Mutex),
 		wg:          new(sync.WaitGroup),
 		listener:    nil,
 		ctx:         ctx,
-		ServiceIp:   ctx.TcpConfig.ServiceIp,
+		ServiceIp:   ctx.Config.TCP.ServiceIp,
 		status:      serviceEnable,
-		token:       app.GetKey(app.TOKEN_FILE),
+		token:       g.GetKey(g.TOKEN_FILE),
 		sendAll:     make([]SendAllFunc, 0),
 		sendRaw:     make([]SendRawFunc, 0),
 		onConnect:   make([]OnConnectFunc, 0),
@@ -184,13 +184,13 @@ func (tcp *TcpService) Close() {
 }
 
 func (tcp *TcpService) Reload() {
-	tcp.ctx.ReloadTcpConfig()
-	log.Debugf("tcp service reload with new config：%+v", tcp.ctx.TcpConfig)
+	tcp.ctx.Reload()
+	log.Debugf("tcp service reload with new config：%+v", tcp.ctx.Config.TCP)
 	tcp.statusLock.Lock()
-	if tcp.ctx.TcpConfig.Enable && tcp.status&serviceEnable <= 0 {
+	if tcp.ctx.Config.TCP.Enabled && tcp.status&serviceEnable <= 0 {
 		tcp.status |= serviceEnable
 	}
-	if !tcp.ctx.TcpConfig.Enable && tcp.status&serviceEnable > 0 {
+	if !tcp.ctx.Config.TCP.Enabled && tcp.status&serviceEnable > 0 {
 		tcp.status ^= serviceEnable
 	}
 	tcp.statusLock.Unlock()
