@@ -124,7 +124,6 @@ func ParseConfig(cfg string) *GlobalConfig {
 	for _, config := range configs {
 		if _, err = os.Stat(config); err == nil {
 			ConfigFile = config
-			log.Printf("[I] Loading config from: %s", config)
 			break
 		}
 	}

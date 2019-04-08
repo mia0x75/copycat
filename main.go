@@ -33,7 +33,7 @@ const banner = "\n" +
 	"`888P\"Y88b  d88' `88b  `88.  .8'  `P  )88b  \n" +
 	" 888   888  888   888   `88..8'    .oP\"888  \n" +
 	" 888   888  888   888    `888'    d8(  888  \n" +
-	"o888o o888o `Y8bod8P'     `8'     `Y888\"\"8o \n"
+	"o888o o888o `Y8bod8P'     `8'     `Y888\"\"8o \n\n"
 
 func runCmd(ctx *g.Context) bool {
 	if *versionCmd || *vCmd || *stopCmd || *reloadCmd || *helpCmd || *hCmd || *statusCmd {
@@ -86,13 +86,7 @@ func main() {
 		}
 	}()
 
-	cfg := g.ParseConfig("")
-	fmt.Printf("%+v\n", cfg.Log)
-	fmt.Printf("%+v\n", cfg.Database)
-	fmt.Printf("%+v\n", cfg.HTTP)
-	fmt.Printf("%+v\n", cfg.TCP)
-	fmt.Printf("%+v\n", cfg.Agent)
-
+	g.ParseConfig("")
 	// app init
 	g.Init()
 	// clear some resource after exit
@@ -108,8 +102,7 @@ func main() {
 		return
 	}
 
-	fmt.Println(banner)
-
+	fmt.Print(banner)
 	fmt.Printf("%-11s: %s\n%-11s: %s\n%-11s: %s\n%-11s: %s\n%-11s: %s\n%-11s: %s\n",
 		"Version", g.Version,
 		"Git commit", g.Git,
