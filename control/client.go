@@ -18,12 +18,12 @@ type control struct {
 func NewClient(ctx *g.Context) *control {
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", ctx.Config.Control.Listen)
 	if err != nil {
-		log.Panicf("start control with error: %+v", err)
+		log.Panicf("[P] start control with error: %+v", err)
 	}
 	con := &control{}
 	con.conn, err = net.DialTCP("tcp", nil, tcpAddr)
 	if err != nil {
-		log.Panicf("start control with error: %+v", err)
+		log.Panicf("[P] start control with error: %+v", err)
 	}
 	return con
 }

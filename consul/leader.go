@@ -40,7 +40,7 @@ func NewLeader(
 	consulConfig.Address = address
 	c, err := api.NewClient(consulConfig)
 	if err != nil {
-		log.Panicf("%v", err)
+		log.Panicf("[P] %v", err)
 	}
 	session := c.Session()
 	kv := c.KV()

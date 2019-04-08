@@ -27,7 +27,7 @@ func (group *httpGroup) match(table string) bool {
 
 func (group *httpGroup) asyncSend(data []byte) {
 	for _, cnode := range group.nodes {
-		log.Debugf("http send broadcast: %s=>%s", cnode.url, string(data))
+		log.Debugf("[D] http send broadcast: %s=>%s", cnode.url, string(data))
 		cnode.asyncSend(data)
 	}
 }

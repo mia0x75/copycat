@@ -23,7 +23,7 @@ func main() {
 	err := client.Connect(address, time.Second*3)
 
 	if err != nil {
-		log.Panicf("connect to %v error: %v", address, err)
+		log.Panicf("[P] connect to %v error: %v", address, err)
 		return
 	}
 	defer client.Disconnect()
@@ -58,7 +58,7 @@ func main() {
 		res3, _ := w3.Wait(time.Second * 3)
 
 		if !bytes.Equal(data1, res1) || !bytes.Equal(data2, res2) || !bytes.Equal(data3, res3) {
-			log.Panicf("error")
+			log.Panicf("[P] error")
 		}
 		fmt.Println("w1 return: ", string(res1))
 		fmt.Println("w2 return: ", string(res2))

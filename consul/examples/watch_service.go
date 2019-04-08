@@ -23,18 +23,18 @@ func main() {
 	go watch.Watch(func(event int, member *consul.ServiceMember) {
 		switch event {
 		case consul.EventAdd:
-			log.Infof("%v add service: %+v", time.Now().Unix(), member)
+			log.Infof("[I] %v add service: %+v", time.Now().Unix(), member)
 		case consul.EventDelete:
-			log.Infof("%v delete service: %+v", time.Now().Unix(), member)
+			log.Infof("[I] %v delete service: %+v", time.Now().Unix(), member)
 		case consul.EventStatusChange:
-			log.Infof("%v offline service: %+v", time.Now().Unix(), member)
+			log.Infof("[I] %v offline service: %+v", time.Now().Unix(), member)
 		}
 	})
 
 	time.Sleep(time.Second * 3)
 
 	sev := consul.NewService(client.Agent(), serviceName, "127.0.0.1", 7770)
-	log.Infof("%v register", time.Now().Unix())
+	log.Infof("[I] %v register", time.Now().Unix())
 	sev.Register()
 	defer sev.Deregister()
 	a := time.After(time.Second * 35)

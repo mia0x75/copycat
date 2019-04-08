@@ -199,7 +199,7 @@ func (tcp *Client) keep() {
 				}
 				_, err := tcp.Write(sendData)
 				if err != nil {
-					log.Errorf("send failure: %+v", err)
+					log.Errorf("[E] send failure: %+v", err)
 				}
 			}
 		}
@@ -211,7 +211,7 @@ func (tcp *Client) keep() {
 		for msgId, v := range tcp.waiter {
 			// check timeout
 			if current-v.time >= tcp.waiterGlobalTimeout {
-				log.Warnf("msgid %v is timeout, will delete", msgId)
+				log.Warnf("[W] msgid %v is timeout, will delete", msgId)
 				close(v.data)
 				delete(tcp.waiter, msgId)
 			}
@@ -230,7 +230,7 @@ func (tcp *Client) readMessage() {
 		readBuffer := make([]byte, tcp.bufferSize)
 		size, err := tcp.conn.Read(readBuffer)
 		if err != nil || size <= 0 {
-			log.Warnf("client read with error: %+v", err)
+			log.Warnf("[W] client read with error: %+v", err)
 			tcp.Disconnect()
 			continue
 		}
@@ -252,7 +252,7 @@ func (tcp *Client) Connect(address string, timeout time.Duration) error {
 	dial := net.Dialer{Timeout: timeout}
 	conn, err := dial.Dial("tcp", address)
 	if err != nil {
-		log.Errorf("start client with error: %+v", err)
+		log.Errorf("[E] start client with error: %+v", err)
 		return err
 	}
 	if tcp.status&statusConnect <= 0 {
@@ -265,7 +265,7 @@ func (tcp *Client) Connect(address string, timeout time.Duration) error {
 func (tcp *Client) onMessage(msg []byte) {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Errorf("onMessage recover%+v, %+v", err, tcp.buffer)
+			log.Errorf("[E] onMessage recover%+v, %+v", err, tcp.buffer)
 			tcp.buffer = make([]byte, 0)
 		}
 	}()
@@ -274,7 +274,7 @@ func (tcp *Client) onMessage(msg []byte) {
 		bufferLen := len(tcp.buffer)
 		msgId, content, pos, err := tcp.coder.Decode(tcp.buffer)
 		if err != nil {
-			log.Errorf("%v", err)
+			log.Errorf("[E] %v", err)
 			tcp.buffer = make([]byte, 0)
 			return
 		}
@@ -285,7 +285,7 @@ func (tcp *Client) onMessage(msg []byte) {
 			tcp.buffer = append(tcp.buffer[:0], tcp.buffer[pos:]...)
 		} else {
 			tcp.buffer = make([]byte, 0)
-			log.Errorf("pos %v (olen=%v) error, content=%v(%v) len is %v, data is: %+v", pos, bufferLen, content, string(content), len(tcp.buffer), tcp.buffer)
+			log.Errorf("[E] pos %v (olen=%v) error, content=%v(%v) len is %v, data is: %+v", pos, bufferLen, content, string(content), len(tcp.buffer), tcp.buffer)
 		}
 		// 1 is system id
 		if msgId > 1 {

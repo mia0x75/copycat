@@ -11,7 +11,7 @@ import (
 
 // 创建一个新的http服务
 func NewHttpService(ctx *g.Context) *HttpService {
-	log.Debugf("start http service with config: %+v", ctx.Config.HTTP)
+	log.Debugf("[D] start http service with config: %+v", ctx.Config.HTTP)
 	if !ctx.Config.HTTP.Enabled {
 		return &HttpService{
 			status: 0,
@@ -52,14 +52,14 @@ func (client *HttpService) SendAll(table string, data []byte) bool {
 }
 
 func (client *HttpService) Close() {
-	log.Debug("http service closing, waiting for buffer send complete.")
+	log.Debug("[D] http service closing, waiting for buffer send complete.")
 	client.groups.wait()
-	log.Debug("http service closed.")
+	log.Debug("[D] http service closed.")
 }
 
 func (client *HttpService) Reload() {
 	client.ctx.Reload()
-	log.Debug("http service reloading...")
+	log.Debug("[D] http service reloading...")
 
 	client.status = 0
 	if client.ctx.Config.HTTP.Enabled {
@@ -76,7 +76,7 @@ func (client *HttpService) Reload() {
 		client.groups.add(httpGroup)
 		client.lock.Unlock()
 	}
-	log.Debug("http service reloaded.")
+	log.Debug("[D] http service reloaded.")
 }
 
 func (client *HttpService) Name() string {

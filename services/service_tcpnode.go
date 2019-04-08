@@ -82,7 +82,7 @@ func (node *tcpClientNode) asyncSend(data []byte) {
 		if len(node.sendQueue) < cap(node.sendQueue) {
 			break
 		}
-		log.Warnf("cache full, try wait, %v, %v", len(node.sendQueue), cap(node.sendQueue))
+		log.Warnf("[W] cache full, try wait, %v, %v", len(node.sendQueue), cap(node.sendQueue))
 	}
 	node.sendQueue <- data
 }
@@ -98,9 +98,9 @@ func (node *tcpClientNode) onConnect() {
 		size, err := (*node.conn).Read(readBuffer[0:])
 		if err != nil {
 			if err != io.EOF {
-				log.Warnf("tcp node %s disconnect with error: %v", (*node.conn).RemoteAddr().String(), err)
+				log.Warnf("[W] tcp node %s disconnect with error: %v", (*node.conn).RemoteAddr().String(), err)
 			} else {
-				log.Debugf("tcp node %s disconnect with error: %v", (*node.conn).RemoteAddr().String(), err)
+				log.Debugf("[D] tcp node %s disconnect with error: %v", (*node.conn).RemoteAddr().String(), err)
 			}
 			node.close()
 			return
@@ -123,7 +123,7 @@ func (node *tcpClientNode) onMessage(msg []byte) {
 		}
 		cmd := int(node.recvBuf[4]) | int(node.recvBuf[5])<<8
 		if !hasCmd(cmd) {
-			log.Errorf("cmd %d does not exists, data: %v", cmd, node.recvBuf)
+			log.Errorf("[E] cmd %d does not exists, data: %v", cmd, node.recvBuf)
 			node.recvBuf = make([]byte, 0)
 			return
 		}
@@ -153,7 +153,7 @@ func (node *tcpClientNode) onSetProEvent(data []byte) {
 	case FlagSetPro:
 		node.onSetPro(content)
 	case FlagPing:
-		log.Debugf("receive ping data")
+		log.Debugf("[D] receive ping data")
 		node.send(packDataSetPro)
 		node.close()
 	default:
@@ -178,30 +178,30 @@ func (node *tcpClientNode) asyncSendService() {
 	defer node.wg.Done()
 	for {
 		if node.status&tcpNodeOnline <= 0 {
-			log.Info("tcp node is closed, clientSendService exit.")
+			log.Info("[I] tcp node is closed, clientSendService exit.")
 			return
 		}
 		select {
 		case msg, ok := <-node.sendQueue:
 			if !ok {
-				log.Info("tcp node sendQueue is closed, sendQueue channel closed.")
+				log.Info("[I] tcp node sendQueue is closed, sendQueue channel closed.")
 				return
 			}
 			(*node.conn).SetWriteDeadline(time.Now().Add(time.Second * 30))
 			size, err := (*node.conn).Write(msg)
 			if err != nil {
 				atomic.AddInt64(&node.sendFailureTimes, int64(1))
-				log.Errorf("tcp send to %s error: %v", (*node.conn).RemoteAddr().String(), err)
+				log.Errorf("[E] tcp send to %s error: %v", (*node.conn).RemoteAddr().String(), err)
 				node.close()
 				return
 			}
 			if size != len(msg) {
-				log.Errorf("%s send not complete: %v", (*node.conn).RemoteAddr().String(), msg)
+				log.Errorf("[E] %s send not complete: %v", (*node.conn).RemoteAddr().String(), msg)
 			}
 		case <-node.ctx.Ctx.Done():
-			log.Debugf("context is closed, wait for exit, left: %d", len(node.sendQueue))
+			log.Debugf("[D] context is closed, wait for exit, left: %d", len(node.sendQueue))
 			if len(node.sendQueue) <= 0 {
-				log.Info("tcp service, clientSendService exit.")
+				log.Info("[I] tcp service, clientSendService exit.")
 				return
 			}
 		}

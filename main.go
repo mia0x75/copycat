@@ -160,7 +160,7 @@ func main() {
 			case tcpService.Name():
 				tcpService.Reload()
 			default:
-				log.Errorf("unknown service: %v", name)
+				log.Errorf("[E] unknown service: %v", name)
 			}
 		}
 	}

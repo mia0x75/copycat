@@ -73,7 +73,7 @@ func (node *TcpClientNode) setReadDeadline(t time.Time) {
 }
 
 func (node *TcpClientNode) onMessage(msg []byte) {
-	log.Debugf("receive msg: %+v", msg)
+	log.Debugf("[D] receive msg: %+v", msg)
 	node.recvBuf = append(node.recvBuf, msg...)
 	for {
 		size := len(node.recvBuf)
@@ -82,14 +82,14 @@ func (node *TcpClientNode) onMessage(msg []byte) {
 		}
 		clen := int(node.recvBuf[0]) | int(node.recvBuf[1])<<8 |
 			int(node.recvBuf[2])<<16 | int(node.recvBuf[3])<<24
-		log.Debugf("len: %+v", clen)
+		log.Debugf("[D] len: %+v", clen)
 		if len(node.recvBuf) < clen+4 {
 			return
 		}
 		cmd := int(node.recvBuf[4]) | int(node.recvBuf[5])<<8
-		log.Debugf("cmd: %v", cmd)
+		log.Debugf("[D] cmd: %v", cmd)
 		if !hasCmd(cmd) {
-			log.Errorf("cmd %d does not exists, data: %v", cmd, node.recvBuf)
+			log.Errorf("[E] cmd %d does not exists, data: %v", cmd, node.recvBuf)
 			node.recvBuf = make([]byte, 0)
 			return
 		}
@@ -98,7 +98,7 @@ func (node *TcpClientNode) onMessage(msg []byte) {
 		case CMD_TICK:
 			node.send(packDataTickOk)
 		case CMD_STOP:
-			log.Debugf("receive stop cmd")
+			log.Debugf("[D] receive stop cmd")
 			node.stop()
 			node.send(services.Pack(CMD_STOP, []byte("ok")))
 		case CMD_RELOAD:
@@ -123,14 +123,14 @@ func (node *TcpClientNode) readMessage() {
 		size, err := (*node.conn).Read(readBuffer[0:])
 		if err != nil {
 			if err != io.EOF {
-				log.Warnf("tcp node %s disconnect with error: %v", (*node.conn).RemoteAddr().String(), err)
+				log.Warnf("[W] tcp node %s disconnect with error: %v", (*node.conn).RemoteAddr().String(), err)
 			} else {
-				log.Debugf("tcp node %s disconnect with error: %v", (*node.conn).RemoteAddr().String(), err)
+				log.Debugf("[D] tcp node %s disconnect with error: %v", (*node.conn).RemoteAddr().String(), err)
 			}
 			node.close()
 			return
 		}
-		log.Debugf("receive msg: %v, %+v", size, readBuffer[:size])
+		log.Debugf("[D] receive msg: %v, %+v", size, readBuffer[:size])
 		node.onMessage(readBuffer[:size])
 	}
 }

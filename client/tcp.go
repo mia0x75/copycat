@@ -114,20 +114,20 @@ func NewClient(opts ...ClientOption) *Client {
 		w := newWatch(client.consulAddress, onWatch(func(ip string, port int, event int) {
 			client.lock.Lock()
 			defer client.lock.Unlock()
-			defer log.Debugf("2-current services list: %+v", client.Services)
+			defer log.Debugf("[D] 2-current services list: %+v", client.Services)
 
 			s := fmt.Sprintf("%v:%v", ip, port)
 			switch event {
 			//case EV_CHANGE:
-			//	log.Debugf("service change(delete): %s", s)
+			//	log.Debugf("[D] service change(delete): %s", s)
 			//	delete(client.Services, s)
 			case EV_DELETE:
-				log.Debugf("service delete: %s", s)
+				log.Debugf("[D] service delete: %s", s)
 				delete(client.Services, s)
 			case EV_ADD:
 				_, ok := client.Services[s]
 				if !ok {
-					log.Debugf("service add: %s", s)
+					log.Debugf("[D] service add: %s", s)
 					client.Services[s] = &serverNode{
 						offline: false,
 						host:    ip,   //m.Service.Address,
@@ -135,7 +135,7 @@ func NewClient(opts ...ClientOption) *Client {
 					}
 				}
 			default:
-				log.Errorf("unknown event: %v", event)
+				log.Errorf("[E] unknown event: %v", event)
 			}
 		}))
 		members, err := w.getMembers()
@@ -147,7 +147,7 @@ func NewClient(opts ...ClientOption) *Client {
 			s := fmt.Sprintf("%v:%v", m.Service.Address, m.Service.Port)
 			_, ok := client.Services[s]
 			if !ok {
-				log.Debugf("1-add : %v", s)
+				log.Debugf("[D] 1-add : %v", s)
 				client.Services[s] = &serverNode{
 					offline: false,
 					host:    m.Service.Address,
@@ -156,11 +156,11 @@ func NewClient(opts ...ClientOption) *Client {
 			}
 		}
 		client.lock.Unlock()
-		log.Debugf("1-current services list: %+v", client.Services)
+		log.Debugf("[D] 1-current services list: %+v", client.Services)
 		client.getConnects = w.getConnects
 		go client.start(wi)
 	} else {
-		log.Panicf("param error")
+		log.Panicf("[P] param error")
 	}
 	<-wi.c
 	return client
@@ -198,7 +198,7 @@ func SetConsulAddress(a string) ClientOption {
 func (client *Client) Subscribe(topics ...string) {
 	// 订阅主题
 	if client.node == nil {
-		log.Errorf("client is not connect")
+		log.Errorf("[E] client is not connect")
 		return
 	}
 	for _, t := range topics {
@@ -218,7 +218,7 @@ func (client *Client) Subscribe(topics ...string) {
 }
 
 func (client *Client) connect(server *serverNode) {
-	log.Debugf("connect to %+v", *server)
+	log.Debugf("[D] connect to %+v", *server)
 	client.lock.Lock()
 	if client.node != nil && client.node.status&nodeOnline > 0 {
 		client.lock.Unlock()
@@ -229,7 +229,7 @@ func (client *Client) connect(server *serverNode) {
 	dns := fmt.Sprintf("%v:%v", server.host, server.port)
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", dns)
 	if err != nil {
-		log.Errorf("connect to %+v with error: %+v", *server, err)
+		log.Errorf("[E] connect to %+v with error: %+v", *server, err)
 		return
 	}
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
@@ -238,7 +238,7 @@ func (client *Client) connect(server *serverNode) {
 		status: nodeOnline,
 	}
 	if err != nil {
-		log.Errorf("start client with error: %+v", err)
+		log.Errorf("[E] start client with error: %+v", err)
 		client.node.status ^= nodeOnline
 		client.node.status |= nodeOffline
 		client.node.conn = nil
@@ -307,7 +307,7 @@ func (client *Client) keepalive() {
 				if err != nil {
 					client.disconnect()
 				} else if n != dl {
-					log.Errorf("发送数据不完整")
+					log.Errorf("[E] 发送数据不完整")
 				}
 			} else {
 				client.lock.Unlock()
@@ -365,14 +365,14 @@ func (client *Client) start(wi *wait) {
 		if client.status&clientOffline > 0 {
 			return
 		}
-		log.Debugf("====================client start====================")
+		log.Debugf("[D] ====================client start====================")
 		for {
 			if client.status&clientOffline > 0 {
 				return
 			}
 			size, err := client.node.conn.Read(readBuffer[0:])
 			if err != nil || size <= 0 {
-				log.Warnf("client read with error: %+v", err)
+				log.Warnf("[W] client read with error: %+v", err)
 				client.disconnect()
 				server.offline = true
 				break
@@ -388,7 +388,7 @@ func (client *Client) disconnect() {
 	if client.node == nil || client.node.status&nodeOffline > 0 {
 		return
 	}
-	log.Warnf("---------------client disconnect---------------")
+	log.Warnf("[W] ---------------client disconnect---------------")
 	client.node.conn.Close()
 	if client.node.status&nodeOnline > 0 {
 		client.node.status ^= nodeOnline
@@ -398,10 +398,10 @@ func (client *Client) disconnect() {
 
 func (client *Client) Close() {
 	if client.status&clientOffline > 0 {
-		log.Debugf("client close was called, but not running")
+		log.Debugf("[D] client close was called, but not running")
 		return
 	}
-	log.Warnf("---------------client close---------------")
+	log.Warnf("[W] ---------------client close---------------")
 	client.disconnect()
 	client.lock.Lock()
 	if client.status&clientOnline > 0 {
@@ -423,7 +423,7 @@ func (client *Client) onMessage(msg []byte) {
 		//2字节 command
 		cmd := int(client.buffer[4]) | int(client.buffer[5])<<8
 		if !hasCmd(cmd) {
-			log.Errorf("cmd=%d 不支持的cmd事件", cmd)
+			log.Errorf("[E] cmd=%d 不支持的cmd事件", cmd)
 			client.buffer = make([]byte, 0)
 			return
 		}
@@ -435,16 +435,16 @@ func (client *Client) onMessage(msg []byte) {
 		switch cmd {
 		case CMD_EVENT:
 			client.times++
-			log.Debugf("收到%d次数据库事件", client.times)
+			log.Debugf("[D] 收到%d次数据库事件", client.times)
 			p := int64(0)
 			sp := time.Now().Unix() - client.startTime
 			if sp > 0 {
 				p = int64(client.times / sp)
 			}
-			log.Debugf("每秒接收数据 %d 条", p)
+			log.Debugf("[D] 每秒接收数据 %d 条", p)
 			var data map[string]interface{}
 			json.Unmarshal(dataB, &data)
-			log.Debugf("%+v", data)
+			log.Debugf("[D] %+v", data)
 
 			for _, f := range client.onevent {
 				f(data)
@@ -459,7 +459,7 @@ func (client *Client) onMessage(msg []byte) {
 		case CMD_SHOW_MEMBERS:
 		case CMD_POS:
 		default:
-			log.Errorf("cmd=%d 不支持的cmd事件", cmd)
+			log.Errorf("[E] cmd=%d 不支持的cmd事件", cmd)
 			client.buffer = make([]byte, 0)
 			return
 		}

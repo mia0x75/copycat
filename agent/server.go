@@ -185,7 +185,7 @@ func (tcp *TcpService) Start() {
 	}
 	tcp.server.Start()
 	tcp.sService.Select(func(member *consul.ServiceMember) {
-		log.Infof("current node %v is leader: %v", tcp.Address, member.IsLeader)
+		log.Infof("[I] current node %v is leader: %v", tcp.Address, member.IsLeader)
 		tcp.leader = member.IsLeader
 		for _, f := range tcp.onLeader {
 			f(member.IsLeader)
@@ -196,11 +196,11 @@ func (tcp *TcpService) Start() {
 				m, err := tcp.sService.Get()
 				if err == nil && m != nil {
 					leaderAddress := fmt.Sprintf("%v:%v", m.ServiceIp, m.Port)
-					log.Infof("connect to leader %v", leaderAddress)
+					log.Infof("[I] connect to leader %v", leaderAddress)
 					tcp.client.Connect(leaderAddress, time.Second*3)
 					break
 				}
-				log.Warnf("leader is not init, try to wait init")
+				log.Warnf("[W] leader is not init, try to wait init")
 				time.Sleep(time.Second)
 			}
 		}
@@ -212,13 +212,13 @@ func (tcp *TcpService) Close() {
 	if !tcp.enable {
 		return
 	}
-	log.Debugf("tcp service closing, waiting for buffer send complete.")
+	log.Debugf("[D] tcp service closing, waiting for buffer send complete.")
 	tcp.lock.Lock()
 	defer tcp.lock.Unlock()
 	if tcp.listener != nil {
 		(*tcp.listener).Close()
 	}
-	log.Debugf("tcp service closed.")
+	log.Debugf("[D] tcp service closed.")
 	tcp.server.Close()
 	tcp.sService.Free()
 }

@@ -105,7 +105,7 @@ func (tcp *SyncClient) Send(data []byte) ([]byte, error) {
 	}
 	size, err := tcp.conn.Read(readBuffer)
 	if err != nil || size <= 0 {
-		log.Warnf("client read with error: %+v", err)
+		log.Warnf("[W] client read with error: %+v", err)
 		return nil, err
 	}
 	_, res, _, err := tcp.codec.Decode(readBuffer[:size])
@@ -120,7 +120,7 @@ func (tcp *SyncClient) Connect() error {
 	d := net.Dialer{Timeout: tcp.connectTimeout}
 	conn, err := d.Dial("tcp", fmt.Sprintf("%s:%d", tcp.ip, tcp.port))
 	if err != nil {
-		log.Errorf("start agent with error: %+v", err)
+		log.Errorf("[E] start agent with error: %+v", err)
 		return err
 	}
 	if tcp.status&statusConnect <= 0 {

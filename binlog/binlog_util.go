@@ -50,8 +50,8 @@ func unpackPos(data []byte) (string, int64, int64) {
 		int64(data[14])<<32 | int64(data[15])<<40 |
 		int64(data[16])<<48 | int64(data[17])<<56
 	if dl+2 < 18 || dl > int64(len(data)-2) {
-		log.Debugf("dl=%d, pos=%d, eventIndex=%d", dl, pos, eventIndex)
-		log.Errorf("unpack pos error: %v", data)
+		log.Debugf("[D] dl=%d, pos=%d, eventIndex=%d", dl, pos, eventIndex)
+		log.Errorf("[E] unpack pos error: %v", data)
 		return "", 0, 0
 	}
 	return string(data[18 : dl+2]), pos, eventIndex
@@ -140,7 +140,7 @@ func fieldDecode(edata interface{}, column *schema.TableColumn) interface{} {
 		return edata
 	default:
 		if edata != nil {
-			log.Warnf("binlog does not support type：%s %+v", column.Name, reflect.TypeOf(edata))
+			log.Warnf("[W] binlog does not support type：%s %+v", column.Name, reflect.TypeOf(edata))
 		}
 		return edata
 	}

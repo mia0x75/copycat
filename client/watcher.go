@@ -61,12 +61,12 @@ func (cw *ConsulWatcher) process() {
 		// watch consul
 		addrs, li, err := cw.queryConsul(&consul.QueryOptions{WaitIndex: cw.li})
 		if err != nil {
-			log.Errorf("============>cw.queryConsul error: %+v", err)
+			log.Errorf("[E] ============>cw.queryConsul error: %+v", err)
 			time.Sleep(1 * time.Second)
 			continue
 		}
 		if addrs == nil {
-			log.Warnf("watch consul services return nil")
+			log.Warnf("[W] watch consul services return nil")
 			addrs = make([]*consul.ServiceEntry, 0)
 		}
 		cw.dialDelete(addrs)
@@ -80,8 +80,7 @@ func (cw *ConsulWatcher) dialDelete(addrs []*consul.ServiceEntry) {
 	deleted := getDelete(cw.addrs, addrs)
 	for _, u := range deleted {
 		for {
-			//log.Debugf("====>delete service: %+v", *u.Service)
-			log.Debugf("============>fired EV_DELETE cw.onChange<====")
+			log.Debugf("[D] ============>fired EV_DELETE cw.onChange<====")
 			for _, f := range cw.onChange {
 				f(u.Service.Address, u.Service.Port, EV_DELETE)
 			}
@@ -95,8 +94,7 @@ func (cw *ConsulWatcher) dialAdd(addrs []*consul.ServiceEntry) {
 	//如果发生改变的服务里面有leader，并且不是自己，则执行重新选leader
 	for _, u := range added {
 		for {
-			//log.Debugf("====>delete service: %+v", *u.Service)
-			log.Debugf("============>fired EV_ADD cw.onChange<====")
+			log.Debugf("[D] ============>fired EV_ADD cw.onChange<====")
 			for _, f := range cw.onChange {
 				f(u.Service.Address, u.Service.Port, EV_ADD)
 			}
@@ -147,7 +145,7 @@ func (cw *ConsulWatcher) getConnects(ip string, port int) uint64 {
 
 	k, _, err := cw.cc.KV().Get(key, nil)
 	if err != nil {
-		log.Errorf("%v", err)
+		log.Errorf("[E] %v", err)
 		return 0
 	}
 	return binary.LittleEndian.Uint64(k.Value)

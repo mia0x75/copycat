@@ -26,7 +26,7 @@ func Exists(dir string) bool {
 func GetCurrentPath() string {
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
-		log.Errorf("%+v", err)
+		log.Errorf("[E] %+v", err)
 		return ""
 	}
 	return strings.Replace(dir, "\\", "/", -1)
@@ -54,7 +54,7 @@ func Mkdir(dir string) bool {
 	}
 	err := os.MkdirAll(dir, 0755)
 	if err != nil {
-		log.Errorf("mkdir with error: %+v", err)
+		log.Errorf("[E] mkdir with error: %+v", err)
 		return false
 	}
 	return true
@@ -80,7 +80,7 @@ func GetPath(dir string) string {
 // delete path
 func Delete(dir string) bool {
 	if !Exists(dir) {
-		log.Warnf("delete dir %s is not exists", dir)
+		log.Warnf("[W] delete dir %s is not exists", dir)
 		return false
 	}
 	return nil == os.RemoveAll(dir)

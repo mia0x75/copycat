@@ -56,6 +56,6 @@ func (ctx *Context) signalHandler() {
 		syscall.SIGTERM,
 		syscall.SIGQUIT)
 	<-sc
-	log.Warnf("get exit signal, service will exit later")
+	log.Warnf("[W] get exit signal, service will exit later")
 	ctx.cancelChan <- struct{}{}
 }

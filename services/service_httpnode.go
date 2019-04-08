@@ -26,7 +26,7 @@ func (node *httpNode) asyncSend(data []byte) {
 		if len(node.sendQueue) < cap(node.sendQueue) {
 			break
 		}
-		log.Warnf("cache full, try wait")
+		log.Warnf("[W] cache full, try wait")
 	}
 	node.sendQueue <- string(data)
 }
@@ -62,19 +62,19 @@ func (node *httpNode) clientSendService() {
 		select {
 		case msg, ok := <-node.sendQueue:
 			if !ok {
-				log.Warnf("http service, sendQueue channel was closed")
+				log.Warnf("[W] http service, sendQueue channel was closed")
 				return
 			}
 			data, err := node.send([]byte(msg))
 			if err != nil {
-				log.Errorf("http service node %s error: %v", node.url, err)
+				log.Errorf("[E] http service node %s error: %v", node.url, err)
 			}
-			log.Debugf("post to %s: %v return %s", msg, node.url, string(data))
+			log.Debugf("[D] post to %s: %v return %s", msg, node.url, string(data))
 		case <-node.ctx.Ctx.Done():
 			l := len(node.sendQueue)
-			log.Debugf("===>wait cache data post: %s left data len %d (if left data is 0, will exit) ", node.url, l)
+			log.Debugf("[D] ===>wait cache data post: %s left data len %d (if left data is 0, will exit) ", node.url, l)
 			if l <= 0 {
-				log.Debugf("%s clientSendService exit", node.url)
+				log.Debugf("[D] %s clientSendService exit", node.url)
 				return
 			}
 		}

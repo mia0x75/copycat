@@ -73,7 +73,7 @@ func (node *ClientNode) close() {
 		(*node.conn).Close()
 		close(node.sendQueue)
 	}
-	log.Warnf("node close")
+	log.Warnf("[W] node close")
 	node.lock.Unlock()
 	for _, f := range node.onclose {
 		f(node)
@@ -98,28 +98,28 @@ func (node *ClientNode) asyncSendService() {
 	defer node.wg.Done()
 	for {
 		if node.status&tcpNodeOnline <= 0 {
-			log.Info("tcp node is closed, clientSendService exit.")
+			log.Info("[I] tcp node is closed, clientSendService exit.")
 			return
 		}
 		select {
 		case msg, ok := <-node.sendQueue:
 			if !ok {
-				log.Info("tcp node sendQueue is closed, sendQueue channel closed.")
+				log.Info("[I] tcp node sendQueue is closed, sendQueue channel closed.")
 				return
 			}
 			size, err := (*node.conn).Write(msg)
 			if err != nil {
-				log.Errorf("tcp send to %s error: %v", (*node.conn).RemoteAddr().String(), err)
+				log.Errorf("[E] tcp send to %s error: %v", (*node.conn).RemoteAddr().String(), err)
 				node.close()
 				return
 			}
 			if size != len(msg) {
-				log.Errorf("%s send not complete: %v", (*node.conn).RemoteAddr().String(), msg)
+				log.Errorf("[E] %s send not complete: %v", (*node.conn).RemoteAddr().String(), msg)
 			}
 		case <-node.ctx.Done():
-			log.Debugf("context is closed, wait for exit, left: %d", len(node.sendQueue))
+			log.Debugf("[D] context is closed, wait for exit, left: %d", len(node.sendQueue))
 			if len(node.sendQueue) <= 0 {
-				log.Info("tcp service, clientSendService exit.")
+				log.Info("[I] tcp service, clientSendService exit.")
 				return
 			}
 		}
@@ -129,7 +129,7 @@ func (node *ClientNode) asyncSendService() {
 func (node *ClientNode) onMessage(msg []byte) {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Errorf("Unpack recover##########%+v, %+v", err, node.recvBuf)
+			log.Errorf("[E] Unpack recover##########%+v, %+v", err, node.recvBuf)
 			node.recvBuf = make([]byte, 0)
 		}
 	}()
@@ -139,7 +139,7 @@ func (node *ClientNode) onMessage(msg []byte) {
 		msgId, content, pos, err := node.codec.Decode(node.recvBuf)
 		if err != nil {
 			node.recvBuf = make([]byte, 0)
-			log.Errorf("node.recvBuf error %v", err)
+			log.Errorf("[E] node.recvBuf error %v", err)
 			return
 		}
 		if msgId <= 0 {
@@ -149,7 +149,7 @@ func (node *ClientNode) onMessage(msg []byte) {
 			node.recvBuf = append(node.recvBuf[:0], node.recvBuf[pos:]...)
 		} else {
 			node.recvBuf = make([]byte, 0)
-			log.Errorf("pos %v(olen=%v) error, cmd=%v, content=%v(%v) len is %v, data is: %+v", pos, bufferLen, msgId, content, string(content), len(node.recvBuf), node.recvBuf)
+			log.Errorf("[E] pos %v(olen=%v) error, cmd=%v, content=%v(%v) len is %v, data is: %+v", pos, bufferLen, msgId, content, string(content), len(node.recvBuf), node.recvBuf)
 		}
 		for _, f := range node.onMessageCallback {
 			f(node, msgId, content)
@@ -162,7 +162,7 @@ func (node *ClientNode) readMessage() {
 		readBuffer := make([]byte, 4096)
 		size, err := (*node.conn).Read(readBuffer)
 		if err != nil && err != io.EOF {
-			log.Warnf("tcp node disconnect with error: %v, %v", (*node.conn).RemoteAddr().String(), err)
+			log.Warnf("[W] tcp node disconnect with error: %v, %v", (*node.conn).RemoteAddr().String(), err)
 			node.close()
 			return
 		}

@@ -27,7 +27,7 @@ func (h *Binlog) handlerInit() {
 	flag := os.O_RDWR | os.O_CREATE | os.O_SYNC
 	h.cacheHandler, err = os.OpenFile(mysqlBinlogCacheFile, flag, 0755)
 	if err != nil {
-		log.Panicf("open cache file with error：%s, %+v", mysqlBinlogCacheFile, err)
+		log.Panicf("[P] open cache file with error：%s, %+v", mysqlBinlogCacheFile, err)
 	}
 	h.statusLock.Lock()
 	h.status |= cacheHandlerIsOpened
@@ -37,16 +37,16 @@ func (h *Binlog) handlerInit() {
 	h.setHandler()
 	currentPos, err := h.handler.GetMasterPos()
 	if err != nil {
-		log.Panicf("get master pos with error：%+v", err)
+		log.Panicf("[P] get master pos with error：%+v", err)
 	}
-	log.Debugf("master pos: %+v", currentPos)
+	log.Debugf("[D] master pos: %+v", currentPos)
 	if f != "" && p > 0 {
 		h.Config.BinlogFile = f
 		h.Config.BinlogPos = uint32(p)
 		if f == currentPos.Name && h.Config.BinlogPos > currentPos.Pos {
 			//pos set error, auto start form current pos
 			h.Config.BinlogPos = currentPos.Pos
-			log.Warnf("pos set error, auto start form: %d", h.Config.BinlogPos)
+			log.Warnf("[W] pos set error, auto start form: %d", h.Config.BinlogPos)
 		}
 	} else {
 		h.Config.BinlogFile = currentPos.Name
@@ -54,7 +54,7 @@ func (h *Binlog) handlerInit() {
 	}
 	h.lastBinFile = h.Config.BinlogFile
 	h.lastPos = uint32(h.Config.BinlogPos)
-	log.Debugf("current pos: (%+v, %+v)", h.lastBinFile, h.lastPos)
+	log.Debugf("[D] current pos: (%+v, %+v)", h.lastBinFile, h.lastPos)
 }
 
 // 设置binlog句柄为当前实现类
@@ -71,7 +71,7 @@ func (h *Binlog) setHandler() {
 
 	handler, err := canal.NewCanal(cfg)
 	if err != nil {
-		log.Panicf("new canal with error：%+v", err)
+		log.Panicf("[P] new canal with error：%+v", err)
 	}
 	h.lock.Lock()
 	h.handler = handler
@@ -88,10 +88,10 @@ func (h *Binlog) RegisterService(s services.Service) {
 
 // notify 事件广播通知
 func (h *Binlog) notify(data map[string]interface{}) {
-	log.Debugf("binlog notify: %+v", data)
+	log.Debugf("[D] binlog notify: %+v", data)
 	jsonData, err := json.Marshal(data)
 	if err != nil {
-		log.Errorf("json pack data error[%v]: %v", err, data)
+		log.Errorf("[E] json pack data error[%v]: %v", err, data)
 		return
 	}
 	table := data["database"].(string) + "." + data["table"].(string)
@@ -187,13 +187,13 @@ func (h *Binlog) String() string {
 
 // OnRotate 暂未使用的基础事件
 func (h *Binlog) OnRotate(e *replication.RotateEvent) error {
-	log.Debugf("OnRotate event fired, %+v", e)
+	log.Debugf("[D] OnRotate event fired, %+v", e)
 	return nil
 }
 
 // alter table结构改变事件回调
 // func (h *Binlog) OnDDL(p mysql.Position, e *canal.DDLEvent) error {
-// 	log.Infof("schema change detected, db: %s, table: %s, action: %s.", e.Schema, e.Table, e.Action)
+// 	log.Infof("[I] schema change detected, db: %s, table: %s, action: %s.", e.Schema, e.Table, e.Action)
 // 	query := make(map[string]interface{})
 // 	query["query"] = e.Query
 
@@ -213,19 +213,19 @@ func (h *Binlog) OnRotate(e *replication.RotateEvent) error {
 
 // OnXID 暂未使用的基础事件
 func (h *Binlog) OnXID(p mysql.Position) error {
-	log.Debugf("OnXID event fired, %+v.", p)
+	log.Debugf("[D] OnXID event fired, %+v.", p)
 	return nil
 }
 
 // OnGTID 暂未使用的基础事件
 func (h *Binlog) OnGTID(g mysql.GTIDSet) error {
-	log.Debugf("OnGTID event fired, GTID: %+v", g)
+	log.Debugf("[D] OnGTID event fired, GTID: %+v", g)
 	return nil
 }
 
 // OnPosSynced 二进制日志位置改变事件
 func (h *Binlog) OnPosSynced(p mysql.Position, b bool) error {
-	log.Debugf("OnPosSynced fired with data: %+v, %v", p, b)
+	log.Debugf("[D] OnPosSynced fired with data: %+v, %v", p, b)
 	eventIndex := atomic.LoadInt64(&h.EventIndex)
 	pos := int64(p.Pos)
 	data := packPos(p.Name, pos, eventIndex)
@@ -254,15 +254,15 @@ func (h *Binlog) saveBinlogPositionCache(r []byte) {
 		h.statusLock.Unlock()
 		return
 	}
-	log.Debugf("write binlog pos cache: %+v", r)
+	log.Debugf("[D] write binlog pos cache: %+v", r)
 	h.statusLock.Unlock()
 	if h.status&cacheHandlerIsOpened > 0 {
 		n, err := h.cacheHandler.WriteAt(r, 0)
 		if err != nil || n <= 0 {
-			log.Errorf("write binlog cache file with error: %+v", err)
+			log.Errorf("[E] write binlog cache file with error: %+v", err)
 		}
 	} else {
-		log.Warnf("handler is closed")
+		log.Warnf("[W] handler is closed")
 	}
 	//只有leader才发送
 	for _, f := range h.onPosChanges {
@@ -276,7 +276,7 @@ func (h *Binlog) getBinlogPositionCache() (string, int64, int64) {
 	h.statusLock.Lock()
 	if h.status&cacheHandlerIsOpened <= 0 {
 		h.statusLock.Unlock()
-		log.Warnf("handler is closed")
+		log.Warnf("[W] handler is closed")
 		return "", 0, 0
 	}
 	h.statusLock.Unlock()
@@ -285,7 +285,7 @@ func (h *Binlog) getBinlogPositionCache() (string, int64, int64) {
 	n, err := h.cacheHandler.Read(data)
 	if n <= 0 || err != nil {
 		if err != io.EOF {
-			log.Errorf("read pos error: %v", err)
+			log.Errorf("[E] read pos error: %v", err)
 		}
 		return "", int64(0), int64(0)
 	}

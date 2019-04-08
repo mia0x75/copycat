@@ -24,7 +24,7 @@ func NewKv(kv *api.KV) IKv {
 
 // set key value
 func (k *Kv) Set(key string, value []byte) error {
-	log.Debugf("write %s=%s", key, value)
+	log.Debugf("[D] write %s=%s", key, value)
 	kv := &api.KVPair{
 		Key:   key,
 		Value: value,
@@ -37,10 +37,10 @@ func (k *Kv) Set(key string, value []byte) error {
 // if key does not exists, return error:KvDoesNotExists
 func (k *Kv) Get(key string) ([]byte, error) {
 	kv, m, e := k.kv.Get(key, nil)
-	log.Infof("kv == %+v,", kv)
-	log.Infof("m == %+v,", m)
+	log.Infof("[I] kv == %+v,", kv)
+	log.Infof("[I] m == %+v,", m)
 	if e != nil {
-		log.Errorf("%+v", e)
+		log.Errorf("[E] %+v", e)
 		return nil, e
 	}
 	if kv == nil {
@@ -53,7 +53,7 @@ func (k *Kv) Get(key string) ([]byte, error) {
 func (k *Kv) Delete(key string) error {
 	_, e := k.kv.Delete(key, nil)
 	if e != nil {
-		log.Errorf("%+v", e)
+		log.Errorf("[E] %+v", e)
 	}
 	return e
 }

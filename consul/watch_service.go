@@ -51,16 +51,16 @@ func (cw *WatchService) Watch(watch func(int, *ServiceMember)) {
 		for {
 			if cw.addrs == nil {
 				// must return addrs to balancer, use ticker to query consul till data gotten
-				log.Infof("query consul service")
+				log.Infof("[I] query consul service")
 				addrs, li, err := cw.queryConsul(nil)
-				log.Infof("service: %v, %+v", li, addrs)
+				log.Infof("[I] service: %v, %+v", li, addrs)
 				// got addrs, return
 				if err == nil {
 					cw.addrs = addrs
 					cw.li = li
 					//当前自己的服务已经注册成功
 					for _, a := range addrs {
-						log.Infof("addr: %+v", *a)
+						log.Infof("[I] addr: %+v", *a)
 					}
 				} else {
 					time.Sleep(time.Second)
@@ -70,9 +70,9 @@ func (cw *WatchService) Watch(watch func(int, *ServiceMember)) {
 			for {
 				// watch consul
 				addrs, li, err := cw.queryConsul(&consul.QueryOptions{WaitIndex: cw.li})
-				log.Infof("watch return %v services", len(addrs))
+				log.Infof("[I] watch return %v services", len(addrs))
 				if err != nil {
-					log.Errorf("============>cw.queryConsul error: %+v", err)
+					log.Errorf("[E] ============>cw.queryConsul error: %+v", err)
 					time.Sleep(1 * time.Second)
 					continue
 				}
@@ -81,11 +81,11 @@ func (cw *WatchService) Watch(watch func(int, *ServiceMember)) {
 				// 比如删除了leader，需要触发重选leader
 				// 比如leader状态发生了变化，编程了不可用状态，这个时候也需要触发重选leader
 				if addrs == nil {
-					log.Warnf("watch services return nil")
+					log.Warnf("[W] watch services return nil")
 					addrs = make([]*consul.ServiceEntry, 0)
 				} else {
 					for _, a := range addrs {
-						log.Infof("watch addr: %+v\r\n%+v", *a, *a.Service)
+						log.Infof("[I] watch addr: %+v\r\n%+v", *a, *a.Service)
 					}
 				}
 				cw.dialAdd(watch, addrs)
@@ -199,7 +199,7 @@ func getChange(a, b []*consul.ServiceEntry) []*consul.ServiceEntry {
 			if va.Service.ID == vb.Service.ID && va.Checks.AggregatedStatus() != vb.Checks.AggregatedStatus() {
 				// 如果已存在，对比一下状态是否已发生改变
 				// 如果已经改变追加到d里面返回
-				log.Debugf("status change: %v!=%v", va.Checks.AggregatedStatus(), vb.Checks.AggregatedStatus())
+				log.Debugf("[D] status change: %v!=%v", va.Checks.AggregatedStatus(), vb.Checks.AggregatedStatus())
 				// 如果已存在，对比一下状态是否已发生改变
 				// 如果已经改变追加到d里面返回
 				//statusChange = true

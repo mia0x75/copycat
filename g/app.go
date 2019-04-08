@@ -132,7 +132,7 @@ func DaemonProcess(d bool) bool {
 		}
 		d, err := ctx.Reborn()
 		if err != nil {
-			log.Fatal("Unable to run: ", err)
+			log.Fatal("[F] Unable to run: ", err)
 		}
 		if d != nil {
 			return true

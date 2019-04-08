@@ -46,7 +46,7 @@ func (tcp *TcpService) Start() {
 	go func() {
 		listen, err := net.Listen("tcp", tcp.Address)
 		if err != nil {
-			log.Errorf("tcp service listen with error: %+v", err)
+			log.Errorf("[E] tcp service listen with error: %+v", err)
 			return
 		}
 		tcp.listener = &listen
@@ -58,7 +58,7 @@ func (tcp *TcpService) Start() {
 			default:
 			}
 			if err != nil {
-				log.Warnf("tcp service accept with error: %+v", err)
+				log.Warnf("[W] tcp service accept with error: %+v", err)
 				continue
 			}
 			node := newNode(tcp.ctx, &conn, nodeStop(tcp.stop), nodeReload(tcp.reload), nodeShowMembers(tcp.showmember))
@@ -68,11 +68,11 @@ func (tcp *TcpService) Start() {
 }
 
 func (tcp *TcpService) Close() {
-	log.Debugf("tcp service closing, waiting for buffer send complete.")
+	log.Debugf("[D] tcp service closing, waiting for buffer send complete.")
 	tcp.lock.Lock()
 	defer tcp.lock.Unlock()
 	if tcp.listener != nil {
 		(*tcp.listener).Close()
 	}
-	log.Debugf("tcp service closed.")
+	log.Debugf("[D] tcp service closed.")
 }

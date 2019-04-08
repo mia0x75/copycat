@@ -63,7 +63,7 @@ func (h *Binlog) Close() {
 	log.Warn("binlog service exit")
 	h.StopService(true)
 	for name, service := range h.services {
-		log.Debugf("%s service exit", name)
+		log.Debugf("[D] %s service exit", name)
 		service.Close()
 	}
 	h.wg.Wait()
@@ -90,14 +90,14 @@ func (h *Binlog) lookStartService() {
 				}
 				h.status |= binlogIsRunning
 				h.statusLock.Unlock()
-				log.Debug("binlog service start")
+				log.Debug("[D] binlog service start")
 				go func() {
 					start := time.Now().Unix()
 					for {
 						if h.lastBinFile == "" {
 							log.Warn("binlog lastBinFile is empty, wait for init")
 							if time.Now().Unix()-start > 3 {
-								log.Panicf("binlog last file is empty")
+								log.Panicf("[P] binlog last file is empty")
 							}
 							time.Sleep(time.Second)
 							continue
@@ -118,7 +118,7 @@ func (h *Binlog) lookStartService() {
 					}
 					err := h.handler.RunFrom(startPos)
 					if err != nil {
-						log.Warnf("binlog service exit with error: %+v", err)
+						log.Warnf("[W] binlog service exit with error: %+v", err)
 						h.statusLock.Lock()
 						h.status ^= binlogIsRunning
 						h.statusLock.Unlock()
@@ -148,7 +148,7 @@ func (h *Binlog) lookStopService() {
 			h.statusLock.Lock()
 			if h.status&binlogIsRunning > 0 && !exit {
 				h.statusLock.Unlock()
-				log.Debug("binlog service stop")
+				log.Debug("[D] binlog service stop")
 				h.handler.Close()
 				//reset handler
 				h.setHandler()
@@ -183,14 +183,14 @@ func (h *Binlog) lookStopService() {
 // 参数exit为true时，会彻底退出服务
 // 这里只是发出了停止服务信号
 func (h *Binlog) StopService(exit bool) {
-	log.Debugf("===========binlog service stop was called===========")
+	log.Debugf("[D] ===========binlog service stop was called===========")
 	h.stopServiceChan <- exit
 }
 
 // 启动服务
 // 这里只是发出了启动服务信号
 func (h *Binlog) StartService() {
-	log.Debugf("===========binlog service start was called===========")
+	log.Debugf("[D] ===========binlog service start was called===========")
 	h.startServiceChan <- struct{}{}
 }
 
@@ -198,7 +198,7 @@ func (h *Binlog) StartService() {
 // 这里启动的是服务插件
 func (h *Binlog) Start() {
 	for _, service := range h.services {
-		log.Debugf("try start service: %v", service.Name())
+		log.Debugf("[D] try start service: %v", service.Name())
 		service.Start()
 	}
 }

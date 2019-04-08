@@ -89,7 +89,7 @@ func (sev *Service) SetLeader(leader bool) {
 func (sev *Service) Deregister() error {
 	err := sev.agent.ServiceDeregister(sev.ServiceID)
 	if err != nil {
-		log.Errorf("deregister service error: ", err.Error())
+		log.Errorf("[E] deregister service error: ", err.Error())
 		return err
 	}
 	err = sev.agent.CheckDeregister(sev.ServiceID)

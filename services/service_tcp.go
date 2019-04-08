@@ -48,7 +48,7 @@ func newTcpService(ctx *g.Context, opts ...TcpServiceOption) *TcpService {
 		f(tcp)
 	}
 	go tcp.keepalive()
-	log.Debugf("-----tcp service init----")
+	log.Debugf("[D] -----tcp service init----")
 	return tcp
 }
 
@@ -96,7 +96,7 @@ func (tcp *TcpService) SendAll(table string, data []byte) bool {
 		return false
 	}
 	tcp.statusLock.Unlock()
-	log.Debugf("tcp SendAll: %s, %+v", table, string(data))
+	log.Debugf("[D] tcp SendAll: %s, %+v", table, string(data))
 	// pack data
 	packData := Pack(CMD_EVENT, data)
 	for _, f := range tcp.sendAll {
@@ -114,7 +114,7 @@ func (tcp *TcpService) SendRaw(msg []byte) bool {
 		return false
 	}
 	tcp.statusLock.Unlock()
-	log.Debugf("tcp sendRaw: %+v", msg)
+	log.Debugf("[D] tcp sendRaw: %+v", msg)
 	for _, f := range tcp.sendRaw {
 		f(msg)
 	}
@@ -135,11 +135,11 @@ func (tcp *TcpService) Start() {
 		dns := fmt.Sprintf("%s:%d", tcp.Ip, tcp.Port)
 		listen, err := net.Listen("tcp", dns)
 		if err != nil {
-			log.Errorf("tcp service listen with error: %+v", err)
+			log.Errorf("[E] tcp service listen with error: %+v", err)
 			return
 		}
 		tcp.listener = &listen
-		log.Infof("tcp service start with: %s", dns)
+		log.Infof("[I] tcp service start with: %s", dns)
 		for {
 			conn, err := listen.Accept()
 			select {
@@ -154,7 +154,7 @@ func (tcp *TcpService) Start() {
 			}
 			tcp.statusLock.Unlock()
 			if err != nil {
-				log.Warnf("tcp service accept with error: %+v", err)
+				log.Warnf("[W] tcp service accept with error: %+v", err)
 				continue
 			}
 			for _, f := range tcp.onConnect {
@@ -168,7 +168,7 @@ func (tcp *TcpService) Close() {
 	if tcp.status&serviceClosed > 0 {
 		return
 	}
-	log.Debugf("tcp service closing, waiting for buffer send complete.")
+	log.Debugf("[D] tcp service closing, waiting for buffer send complete.")
 	tcp.lock.Lock()
 	defer tcp.lock.Unlock()
 	if tcp.listener != nil {
@@ -180,12 +180,12 @@ func (tcp *TcpService) Close() {
 	if tcp.status&serviceClosed <= 0 {
 		tcp.status |= serviceClosed
 	}
-	log.Debugf("tcp service closed.")
+	log.Debugf("[D] tcp service closed.")
 }
 
 func (tcp *TcpService) Reload() {
 	tcp.ctx.Reload()
-	log.Debugf("tcp service reload with new config：%+v", tcp.ctx.Config.TCP)
+	log.Debugf("[D] tcp service reload with new config：%+v", tcp.ctx.Config.TCP)
 	tcp.statusLock.Lock()
 	if tcp.ctx.Config.TCP.Enabled && tcp.status&serviceEnable <= 0 {
 		tcp.status |= serviceEnable
@@ -197,7 +197,7 @@ func (tcp *TcpService) Reload() {
 	for _, f := range tcp.reload {
 		f()
 	}
-	log.Debugf("tcp service restart...")
+	log.Debugf("[D] tcp service restart...")
 	tcp.Close()
 	tcp.Start()
 }

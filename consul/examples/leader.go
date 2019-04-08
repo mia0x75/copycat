@@ -18,7 +18,7 @@ func main() {
 
 	leader1 := consul.NewLeader(address, lockKey, serviceName, "127.0.0.1", 7770)
 	leader1.Select(func(member *consul.ServiceMember) {
-		log.Infof("1=>%+v", member)
+		log.Infof("[I] 1=>%+v", member)
 	})
 	//defer leader1.Free()
 	// wait a second, and start anther service
@@ -26,13 +26,13 @@ func main() {
 
 	leader2 := consul.NewLeader(address, lockKey, serviceName, "127.0.0.1", 7771)
 	leader2.Select(func(member *consul.ServiceMember) {
-		log.Infof("2=>%+v", member)
+		log.Infof("[I] 2=>%+v", member)
 	})
 
 	go func() {
 		for {
 			l, e := leader1.Get()
-			log.Infof("%v, %v", l, e)
+			log.Infof("[I] %v, %v", l, e)
 			time.Sleep(time.Second)
 		}
 	}()

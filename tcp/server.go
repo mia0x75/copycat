@@ -77,11 +77,11 @@ func (tcp *Server) Start() {
 	go func() {
 		listen, err := net.Listen("tcp", tcp.Address)
 		if err != nil {
-			log.Panicf("tcp service listen with error: %+v", err)
+			log.Panicf("[P] tcp service listen with error: %+v", err)
 			return
 		}
 		tcp.listener = &listen
-		log.Infof("tcp service start with: %s", tcp.Address)
+		log.Infof("[I] tcp service start with: %s", tcp.Address)
 		for {
 			conn, err := listen.Accept()
 			select {
@@ -90,7 +90,7 @@ func (tcp *Server) Start() {
 			default:
 			}
 			if err != nil {
-				log.Warnf("tcp service accept with error: %+v", err)
+				log.Warnf("[W] tcp service accept with error: %+v", err)
 				continue
 			}
 			node := newNode(
@@ -121,12 +121,12 @@ func (tcp *Server) Broadcast(msgId int64, data []byte) {
 
 // close service
 func (tcp *Server) Close() {
-	log.Debugf("tcp service closing, waiting for buffer send complete.")
+	log.Debugf("[D] tcp service closing, waiting for buffer send complete.")
 	if tcp.listener != nil {
 		(*tcp.listener).Close()
 	}
 	tcp.clients.close()
-	log.Debugf("tcp service closed.")
+	log.Debugf("[D] tcp service closed.")
 }
 
 // keepalive
