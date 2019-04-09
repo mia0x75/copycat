@@ -4,7 +4,7 @@
 	},
 	"time_zone": "Local",
 	"control": {
-		"listen": "127.0.0.1: 6061"
+		"listen": "127.0.0.1:6061"
 	},
 	"database": {
 		"host": "127.0.0.1",

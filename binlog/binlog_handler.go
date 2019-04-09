@@ -16,14 +16,12 @@ import (
 
 	"github.com/mia0x75/copycat/g"
 	"github.com/mia0x75/copycat/services"
-	"github.com/mia0x75/copycat/utils/path"
 )
 
 // 初始化binlog事件相关句柄
 func (h *Binlog) handlerInit() {
 	var err error
 	mysqlBinlogCacheFile := g.MASTER_INFO_FILE
-	path.Mkdir(path.GetParent(mysqlBinlogCacheFile))
 	flag := os.O_RDWR | os.O_CREATE | os.O_SYNC
 	h.cacheHandler, err = os.OpenFile(mysqlBinlogCacheFile, flag, 0755)
 	if err != nil {
@@ -255,7 +253,6 @@ func (h *Binlog) saveBinlogPositionCache(r []byte) {
 		return
 	}
 	log.Debugf("[D] write binlog pos cache: %+v", r)
-	h.statusLock.Unlock()
 	if h.status&cacheHandlerIsOpened > 0 {
 		n, err := h.cacheHandler.WriteAt(r, 0)
 		if err != nil || n <= 0 {
@@ -264,6 +261,7 @@ func (h *Binlog) saveBinlogPositionCache(r []byte) {
 	} else {
 		log.Warnf("[W] handler is closed")
 	}
+	h.statusLock.Unlock()
 	//只有leader才发送
 	for _, f := range h.onPosChanges {
 		f(r)

@@ -36,30 +36,34 @@ func (groups *tcpGroups) reload() {
 
 func (groups *tcpGroups) add(group *tcpGroup) {
 	groups.lock.Lock()
+	defer groups.lock.Unlock()
 	groups.g[group.name] = group
-	groups.lock.Unlock()
 }
 
 func (groups *tcpGroups) delete(group *tcpGroup) {
 	groups.lock.Lock()
+	defer groups.lock.Unlock()
 	delete(groups.g, group.name)
-	groups.lock.Unlock()
 }
 
 func (groups *tcpGroups) hasName(findName string) bool {
 	groups.lock.Lock()
+	defer groups.lock.Unlock()
 	_, ok := groups.g[findName]
-	groups.lock.Unlock()
 	return ok
 }
 
 func (groups *tcpGroups) asyncSend(data []byte) {
+	groups.lock.Lock()
+	defer groups.lock.Unlock()
 	for _, group := range groups.g {
 		group.asyncSend(data)
 	}
 }
 
 func (groups *tcpGroups) close() {
+	groups.lock.Lock()
+	defer groups.lock.Unlock()
 	for key, group := range groups.g {
 		group.close()
 		delete(groups.g, key)
@@ -68,10 +72,10 @@ func (groups *tcpGroups) close() {
 
 func (groups *tcpGroups) removeNode(node *tcpClientNode) {
 	groups.lock.Lock()
+	defer groups.lock.Unlock()
 	if group, found := groups.g[node.group]; found {
 		group.remove(node)
 	}
-	groups.lock.Unlock()
 }
 
 func (groups *tcpGroups) addNode(node *tcpClientNode, groupName string) bool {
@@ -87,7 +91,6 @@ func (groups *tcpGroups) addNode(node *tcpClientNode, groupName string) bool {
 
 func (groups *tcpGroups) sendAll(table string, data []byte) bool {
 	for _, group := range groups.g {
-		// check if match
 		if group.match(table) {
 			group.asyncSend(data)
 		}

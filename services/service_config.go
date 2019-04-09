@@ -103,15 +103,14 @@ type SetProFunc func(n *tcpClientNode, groupName string) bool
 // NodeOption TODO
 type NodeOption func(n *tcpClientNode)
 
-type tcpClients []*tcpClientNode
-
 type tcpGroup struct {
 	name   string
 	filter []string
-	nodes  tcpClients
+	nodes  []*tcpClientNode
 	lock   *sync.Mutex
 }
 
+// TCPService TODO
 type TCPService struct {
 	Service
 	IP          string      // 监听ip

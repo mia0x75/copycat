@@ -99,8 +99,6 @@ func GetKey(sessionFile string) string {
 	}
 	//write a new key
 	key := fmt.Sprintf("%d-%s", time.Now().Unix(), utils.RandString(64))
-	dir := path.GetParent(sessionFile)
-	path.Mkdir(dir) // TODO:
 	n, _ := file.WriteString(sessionFile, key)
 	if n != len(key) {
 		return ""

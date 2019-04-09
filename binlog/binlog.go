@@ -29,6 +29,7 @@ func NewBinlog(ctx *g.Context, opts ...Option) *Binlog {
 	for _, f := range opts {
 		f(binlog)
 	}
+	binlog.handlerInit()
 	go binlog.lookStartService()
 	go binlog.lookStopService()
 	return binlog
@@ -62,8 +63,7 @@ func (h *Binlog) Close() {
 	h.statusLock.Unlock()
 	log.Warn("binlog service exit")
 	h.StopService(true)
-	for name, service := range h.services {
-		log.Debugf("[D] %s service exit", name)
+	for _, service := range h.services {
 		service.Close()
 	}
 	h.wg.Wait()
@@ -147,17 +147,17 @@ func (h *Binlog) lookStopService() {
 			}
 			h.statusLock.Lock()
 			if h.status&binlogIsRunning > 0 && !exit {
-				h.statusLock.Unlock()
 				log.Debug("[D] binlog service stop")
 				h.handler.Close()
 				//reset handler
 				h.setHandler()
-			} else {
-				h.statusLock.Unlock()
 			}
+			h.statusLock.Unlock()
 
 			if exit {
+				h.statusLock.Lock()
 				r := packPos(h.lastBinFile, int64(h.lastPos), atomic.LoadInt64(&h.EventIndex))
+				h.statusLock.Unlock()
 				h.saveBinlogPositionCache(r)
 				h.statusLock.Lock()
 				if h.status&cacheHandlerIsOpened > 0 {

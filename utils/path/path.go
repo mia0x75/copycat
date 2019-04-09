@@ -47,27 +47,6 @@ func getWorkingPath() string {
 	return "/"
 }
 
-// mkdir
-func Mkdir(dir string) bool {
-	if Exists(dir) {
-		return true
-	}
-	err := os.MkdirAll(dir, 0755)
-	if err != nil {
-		log.Errorf("[E] mkdir with error: %+v", err)
-		return false
-	}
-	return true
-}
-
-// get parent path
-func GetParent(dir string) string {
-	dir = strings.Replace(dir, "\\", "/", -1)
-	//str := wingString.WString{dir}
-	lastIndex := strings.LastIndex(dir[:len(dir)-1], "/")
-	return dir[:lastIndex]
-}
-
 // path format, remove the last /
 func GetPath(dir string) string {
 	dir = strings.Replace(dir, "\\", "/", -1)

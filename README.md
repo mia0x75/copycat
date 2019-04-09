@@ -1,5 +1,13 @@
 [![LICENSE](https://img.shields.io/badge/license-Anti%20996-blue.svg)](https://github.com/996icu/996.ICU/blob/master/LICENSE)
 [![Badge](https://img.shields.io/badge/link-996.icu-red.svg)](https://996.icu/#/zh_CN)
+```
+                                                _    
+   ___    ___    _ __    _   _    ___    __ _  | |_  
+  / __|  / _ \  | '_ \  | | | |  / __|  / _` | | __| 
+ | (__  | (_) | | |_) | | |_| | | (__  | (_| | | |_  
+  \___|  \___/  | .__/   \__, |  \___|  \__,_|  \__| 
+                |_|      |___/                        
+```
 
 MariaDB日志事件推送中间件，用于实时计算、实时同步、缓存更新等场景。
 

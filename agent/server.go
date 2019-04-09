@@ -26,9 +26,9 @@ import (
 //如果pos改变，广播到所有的非leader节点上
 //非leader节点保存pos信息
 
+// ServiceName 服务名称
 // todo 这里还需要一个异常检测机制
 // 定期检测是否有leader在运行，如果没有，尝试强制解锁，然后选出新的leader
-// ServiceName 服务名称
 const ServiceName = "binlog-go-agent"
 
 // 服务注册
@@ -45,8 +45,8 @@ type OnEventFunc func(table string, data []byte) bool
 // OnRawFunc 回调
 type OnRawFunc func(msg []byte) bool
 
-// TcpService 结构体
-type TcpService struct {
+// TCPService 结构体
+type TCPService struct {
 	Address    string // 监听ip
 	lock       *sync.Mutex
 	statusLock *sync.Mutex
@@ -67,10 +67,10 @@ type TcpService struct {
 }
 
 // NewAgentServer 创建实例
-func NewAgentServer(ctx *g.Context, opts ...AgentServerOption) *TcpService {
+func NewAgentServer(ctx *g.Context, opts ...AgentServerOption) *TCPService {
 	cfg := g.Config().Agent
 	if !cfg.Enabled {
-		s := &TcpService{
+		s := &TCPService{
 			enable: cfg.Enabled,
 		}
 		for _, f := range opts {
@@ -78,7 +78,7 @@ func NewAgentServer(ctx *g.Context, opts ...AgentServerOption) *TcpService {
 		}
 		return s
 	}
-	tcp := &TcpService{
+	tcp := &TCPService{
 		Address:    cfg.Listen,
 		lock:       new(sync.Mutex),
 		statusLock: new(sync.Mutex),
@@ -113,7 +113,7 @@ func NewAgentServer(ctx *g.Context, opts ...AgentServerOption) *TcpService {
 
 // OnPos 设置收到pos的回调函数
 func OnPos(f OnPosFunc) AgentServerOption {
-	return func(s *TcpService) {
+	return func(s *TCPService) {
 		if !s.enable {
 			return
 		}
@@ -121,8 +121,9 @@ func OnPos(f OnPosFunc) AgentServerOption {
 	}
 }
 
+// OnLeader TODO
 func OnLeader(f OnLeaderFunc) AgentServerOption {
-	return func(s *TcpService) {
+	return func(s *TCPService) {
 		if !s.enable {
 			f(true)
 			return
@@ -135,7 +136,7 @@ func OnLeader(f OnLeaderFunc) AgentServerOption {
 // 这个回调应该来源于service_plugin/tcp
 // 最终被转发到SendAll
 func OnEvent(f OnEventFunc) AgentServerOption {
-	return func(s *TcpService) {
+	return func(s *TCPService) {
 		if !s.enable {
 			return
 		}
@@ -145,14 +146,14 @@ func OnEvent(f OnEventFunc) AgentServerOption {
 
 // OnRaw 原封不动转发到tcp SendRaw
 func OnRaw(f OnRawFunc) AgentServerOption {
-	return func(s *TcpService) {
+	return func(s *TCPService) {
 		if !s.enable {
 			return
 		}
 	}
 }
 
-func (tcp *TcpService) onClientMessage(client *mtcp.Client, content []byte) {
+func (tcp *TCPService) onClientMessage(client *mtcp.Client, content []byte) {
 	cmd, data, err := services.Unpack(content)
 	if err != nil {
 		log.Error(err)
@@ -175,11 +176,11 @@ func (tcp *TcpService) onClientMessage(client *mtcp.Client, content []byte) {
 	}
 }
 
-func (tcp *TcpService) onServerMessage(node *mtcp.ClientNode, msgID int64, data []byte) {
+func (tcp *TCPService) onServerMessage(node *mtcp.ClientNode, msgID int64, data []byte) {
 }
 
 // Start 启动
-func (tcp *TcpService) Start() {
+func (tcp *TCPService) Start() {
 	if !tcp.enable {
 		return
 	}
@@ -208,7 +209,7 @@ func (tcp *TcpService) Start() {
 }
 
 // Close 关闭
-func (tcp *TcpService) Close() {
+func (tcp *TCPService) Close() {
 	if !tcp.enable {
 		return
 	}
@@ -224,7 +225,7 @@ func (tcp *TcpService) Close() {
 }
 
 // Sync 此api提供给binlog通过agent server同步广播发送给所有的client客户端
-func (tcp *TcpService) Sync(data []byte) {
+func (tcp *TCPService) Sync(data []byte) {
 	if !tcp.enable {
 		return
 	}
@@ -234,7 +235,7 @@ func (tcp *TcpService) Sync(data []byte) {
 }
 
 // ShowMembers 显示群集信息
-func (tcp *TcpService) ShowMembers() string {
+func (tcp *TCPService) ShowMembers() string {
 	if !tcp.enable {
 		return "agent is not enable"
 	}

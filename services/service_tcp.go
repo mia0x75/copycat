@@ -183,6 +183,8 @@ func (tcp *TCPService) Close() {
 	if tcp.listener != nil {
 		(*tcp.listener).Close()
 	}
+	tcp.statusLock.Lock()
+	defer tcp.statusLock.Unlock()
 	for _, f := range tcp.onClose {
 		f()
 	}
