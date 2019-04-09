@@ -6,7 +6,7 @@ import (
 	"github.com/mia0x75/copycat/g"
 )
 
-func newTcpGroup(group *g.TCPGroupConfig) *tcpGroup {
+func newTCPGroup(group *g.TCPGroupConfig) *tcpGroup {
 	g := &tcpGroup{
 		name:   group.Name,
 		filter: group.Filter,

@@ -5,6 +5,7 @@ import (
 	"regexp"
 )
 
+// Pack TODO
 func Pack(cmd int, msg []byte) []byte {
 	l := len(msg)
 	r := make([]byte, l+6)
@@ -19,13 +20,14 @@ func Pack(cmd int, msg []byte) []byte {
 	return r
 }
 
-var DataLenError = errors.New("data len error")
+var errDataLenError = errors.New("data len error")
 
+// Unpack TODO
 func Unpack(data []byte) (int, []byte, error) {
 	clen := int(data[0]) | int(data[1])<<8 |
 		int(data[2])<<16 | int(data[3])<<24
 	if len(data) < clen+4 {
-		return 0, nil, DataLenError
+		return 0, nil, errDataLenError
 	}
 	cmd := int(data[4]) | int(data[5])<<8
 	content := data[6 : clen+4]
@@ -45,6 +47,7 @@ func hasCmd(cmd int) bool {
 		cmd == CMD_POS
 }
 
+// MatchFilters TODO
 func MatchFilters(filters []string, table string) bool {
 	if filters == nil || len(filters) <= 0 {
 		return true
@@ -58,6 +61,7 @@ func MatchFilters(filters []string, table string) bool {
 	return false
 }
 
+// PackPro TODO
 func PackPro(flag int, content []byte) []byte {
 	// 数据打包
 	l := len(content) + 3

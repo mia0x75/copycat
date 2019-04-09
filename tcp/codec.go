@@ -9,25 +9,36 @@ import (
 )
 
 const (
+	// PackageMaxLength TODO
 	PackageMaxLength = 1024000
+	// PackageMinLength TODO
 	PackageMinLength = 16
-	ContentMinLen    = 8
+	// ContentMinLen TODO
+	ContentMinLen = 8
 )
 
 var (
-	MaxPackError   = errors.New("package len max then limit")
-	DataLenError   = errors.New("data len error")
-	InvalidPackage = errors.New("invalid package")
-	PackageHeader  = []byte{255, 255, 255, 255}
+	errMaxPackError   = errors.New("package len max then limit")
+	errDataLenError   = errors.New("data len error")
+	errInvalidPackage = errors.New("invalid package")
 )
 
+var (
+	// PackageHeader TODO
+	PackageHeader = []byte{255, 255, 255, 255}
+)
+
+// ICodec TODO
 type ICodec interface {
-	Encode(msgId int64, msg []byte) []byte
+	Encode(msgID int64, msg []byte) []byte
 	Decode(data []byte) (int64, []byte, int, error)
 }
+
+// Codec TODO
 type Codec struct{}
 
-func (c Codec) Encode(msgId int64, msg []byte) []byte {
+// Encode TODO
+func (c Codec) Encode(msgID int64, msg []byte) []byte {
 	// 为了增强容错性，这里加入4字节的header支持
 
 	// 【4字节header长度】 【4字节的内容长度】 【8自己的消息id】 【实际的内容长度】
@@ -43,12 +54,12 @@ func (c Codec) Encode(msgId int64, msg []byte) []byte {
 	// 具体存放的内容长度是去除4字节后的长度
 	cl := l + 8
 	binary.LittleEndian.PutUint32(r[4:8], uint32(cl))
-	binary.LittleEndian.PutUint64(r[8:16], uint64(msgId))
+	binary.LittleEndian.PutUint64(r[8:16], uint64(msgID))
 	copy(r[16:], msg)
 	return r
 }
 
-// 这里的第一个返回值是解包之后的实际报内容
+// Decode 这里的第一个返回值是解包之后的实际报内容
 // 第二个返回值是读取了的包长度
 func (c Codec) Decode(data []byte) (int64, []byte, int, error) {
 	if data == nil || len(data) == 0 {
@@ -59,26 +70,26 @@ func (c Codec) Decode(data []byte) (int64, []byte, int, error) {
 		i := bytes.Index(data, PackageHeader)
 		if i < 0 {
 			// 没有找到header，说明这个包为非法包，可以丢弃
-			return 0, nil, 0, InvalidPackage
+			return 0, nil, 0, errInvalidPackage
 		}
 		startPos = i + 4
 	}
 	if len(data) > PackageMaxLength {
 		logrus.Infof("max len error")
-		return 0, nil, 0, MaxPackError
+		return 0, nil, 0, errMaxPackError
 	}
 	if len(data) < PackageMinLength {
 		return 0, nil, 0, nil
 	}
 	clen := int(binary.LittleEndian.Uint32(data[startPos : startPos+4]))
 	if clen < ContentMinLen {
-		return 0, nil, 0, DataLenError
+		return 0, nil, 0, errDataLenError
 	}
 	if len(data) < clen+8 {
 		return 0, nil, 0, nil
 	}
-	msgId := int64(binary.LittleEndian.Uint64(data[startPos+4 : startPos+12]))
+	msgID := int64(binary.LittleEndian.Uint64(data[startPos+4 : startPos+12]))
 	content := make([]byte, len(data[startPos+12:startPos+clen+4]))
 	copy(content, data[startPos+12:startPos+clen+4])
-	return msgId, content, startPos + clen + 4, nil
+	return msgID, content, startPos + clen + 4, nil
 }

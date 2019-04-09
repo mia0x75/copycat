@@ -2,11 +2,13 @@ package consul
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/hashicorp/consul/api"
 	log "github.com/sirupsen/logrus"
-	"time"
 )
 
+// Leader TODO
 type Leader struct {
 	service     IService
 	lock        *LockEntity
@@ -18,16 +20,19 @@ type Leader struct {
 	ServiceHost string
 	ServicePort int
 }
+
+// ILeader TODO
 type ILeader interface {
 	Deregister() error
 	Register() (*ServiceMember, error)
-	UpdateTtl() error
+	UpdateTTL() error
 	GetServices(passingOnly bool) ([]*ServiceMember, error)
 	Select(onLeader func(*ServiceMember))
 	Get() (*ServiceMember, error)
 	Free()
 }
 
+// NewLeader TODO
 func NewLeader(
 	address string, //127.0.0.1:8500
 	lockKey string,
@@ -45,12 +50,12 @@ func NewLeader(
 	session := c.Session()
 	kv := c.KV()
 	mySession := NewSessionEntity(session, 10)
-	sessionId, err := mySession.Create()
+	sessionID, err := mySession.Create()
 
 	sev := NewService(c.Agent(), name, host, port, opts...)
 	l := &Leader{
 		service:     sev,
-		lock:        NewLockEntity(sessionId, kv, lockKey, 10),
+		lock:        NewLockEntity(sessionID, kv, lockKey, 10),
 		leader:      false,
 		session:     mySession,
 		health:      c.Health(),
@@ -60,36 +65,36 @@ func NewLeader(
 		ServicePort: port,
 	}
 	go func() {
-		l.UpdateTtl()
+		l.UpdateTTL()
 		time.Sleep(time.Second * 2)
 	}()
 	return l
 }
 
-//deregister service
+// Deregister deregister service
 func (sev *Leader) Deregister() error {
 	return sev.service.Deregister()
 }
 
-//register service
+// Register register service
 func (sev *Leader) Register() (*ServiceMember, error) {
 	err := sev.service.Register()
 	leader := &ServiceMember{
 		IsLeader:  sev.leader,
 		ServiceID: sev.ServiceID,
 		Status:    statusOnline,
-		ServiceIp: sev.ServiceHost,
+		ServiceIP: sev.ServiceHost,
 		Port:      sev.ServicePort,
 	}
 	return leader, err
 }
 
-// update service's ttl
-func (sev *Leader) UpdateTtl() error {
-	return sev.service.UpdateTtl()
+// UpdateTTL update service's ttl
+func (sev *Leader) UpdateTTL() error {
+	return sev.service.UpdateTTL()
 }
 
-// get all service by current service name
+// GetServices get all service by current service name
 func (sev *Leader) GetServices(passingOnly bool) ([]*ServiceMember, error) {
 	members, _, err := sev.health.Service(sev.ServiceName, "", passingOnly, nil)
 	if err != nil {
@@ -107,21 +112,21 @@ func (sev *Leader) GetServices(passingOnly bool) ([]*ServiceMember, error) {
 			m.IsLeader = false
 		}
 		m.ServiceID = v.Service.ID //Tags[1]
-		m.ServiceIp = v.Service.Address
+		m.ServiceIP = v.Service.Address
 		m.Port = v.Service.Port
 		data = append(data, m)
 	}
 	return data, nil
 }
 
-// select a leader
+// Select select a leader
 func (sev *Leader) Select(onLeader func(*ServiceMember)) {
 	go func() {
 		leader := &ServiceMember{
 			IsLeader:  false,
 			ServiceID: sev.ServiceID,
 			Status:    statusOnline,
-			ServiceIp: sev.ServiceHost,
+			ServiceIP: sev.ServiceHost,
 			Port:      sev.ServicePort,
 		}
 		success, err := sev.lock.Lock()
@@ -144,27 +149,27 @@ func (sev *Leader) Select(onLeader func(*ServiceMember)) {
 				}
 			}
 			sev.session.Renew()
-			sev.UpdateTtl()
+			sev.UpdateTTL()
 			time.Sleep(time.Second * 3)
 		}
 	}()
 }
 
-// get leader service
+// Get get leader service
 func (sev *Leader) Get() (*ServiceMember, error) {
 	members, _ := sev.GetServices(true)
 	if members == nil {
-		return nil, membersEmpty
+		return nil, errMembersEmpty
 	}
 	for _, v := range members {
 		if v.IsLeader {
 			return v, nil
 		}
 	}
-	return nil, leaderNotFound
+	return nil, errLeaderNotFound
 }
 
-// force free a leader
+// Free force free a leader
 func (sev *Leader) Free() {
 	sev.Deregister()
 	if sev.leader {

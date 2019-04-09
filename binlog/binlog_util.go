@@ -68,21 +68,21 @@ func fieldDecode(edata interface{}, column *schema.TableColumn) interface{} {
 	case int:
 		return edata
 	case int8:
-		var r int64 = 0
+		var r int64
 		r = int64(edata.(int8))
 		if column.IsUnsigned && r < 0 {
 			r = int64(int64(256) + int64(edata.(int8)))
 		}
 		return r
 	case int16:
-		var r int64 = 0
+		var r int64
 		r = int64(edata.(int16))
 		if column.IsUnsigned && r < 0 {
 			r = int64(int64(65536) + int64(edata.(int16)))
 		}
 		return r
 	case int32:
-		var r int64 = 0
+		var r int64
 		r = int64(edata.(int32))
 		if column.IsUnsigned && r < 0 {
 			t := string([]byte(column.RawType)[0:3])
@@ -114,15 +114,14 @@ func fieldDecode(edata interface{}, column *schema.TableColumn) interface{} {
 			return res
 		} else {
 			if column.IsUnsigned {
-				var ur uint64 = 0
+				var ur uint64
 				ur = uint64(edata.(int64))
 				if ur < 0 {
 					ur = 1<<63 + (1<<63 + ur)
 				}
 				return ur
-			} else {
-				return edata
 			}
+			return edata
 		}
 	case uint:
 		return edata

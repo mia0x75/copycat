@@ -11,9 +11,10 @@ import (
 	"github.com/mia0x75/copycat/g"
 )
 
-func NewTcpService(ctx *g.Context) *TcpService {
+// NewTCPService TODO
+func NewTCPService(ctx *g.Context) *TCPService {
 	group := newGroups(ctx)
-	t := newTcpService(ctx,
+	t := newTCPService(ctx,
 		SetSendAll(group.sendAll),
 		SetSendRaw(group.asyncSend),
 		SetOnConnect(group.onConnect),
@@ -24,16 +25,16 @@ func NewTcpService(ctx *g.Context) *TcpService {
 	return t
 }
 
-func newTcpService(ctx *g.Context, opts ...TcpServiceOption) *TcpService {
-	tcp := &TcpService{
-		Ip:          ctx.Config.TCP.Addr,
+func newTCPService(ctx *g.Context, opts ...TCPServiceOption) *TCPService {
+	tcp := &TCPService{
+		IP:          ctx.Config.TCP.Addr,
 		Port:        ctx.Config.TCP.Port,
 		lock:        new(sync.Mutex),
 		statusLock:  new(sync.Mutex),
 		wg:          new(sync.WaitGroup),
 		listener:    nil,
 		ctx:         ctx,
-		ServiceIp:   ctx.Config.TCP.ServiceIp,
+		ServiceIP:   ctx.Config.TCP.ServiceIP,
 		status:      serviceEnable,
 		token:       g.GetKey(g.TOKEN_FILE),
 		sendAll:     make([]SendAllFunc, 0),
@@ -52,44 +53,50 @@ func newTcpService(ctx *g.Context, opts ...TcpServiceOption) *TcpService {
 	return tcp
 }
 
-func SetSendAll(f SendAllFunc) TcpServiceOption {
-	return func(service *TcpService) {
+// SetSendAll TODO
+func SetSendAll(f SendAllFunc) TCPServiceOption {
+	return func(service *TCPService) {
 		service.sendAll = append(service.sendAll, f)
 	}
 }
 
-func SetSendRaw(f SendRawFunc) TcpServiceOption {
-	return func(service *TcpService) {
+// SetSendRaw TODO
+func SetSendRaw(f SendRawFunc) TCPServiceOption {
+	return func(service *TCPService) {
 		service.sendRaw = append(service.sendRaw, f)
 	}
 }
 
-func SetOnConnect(f OnConnectFunc) TcpServiceOption {
-	return func(service *TcpService) {
+// SetOnConnect TODO
+func SetOnConnect(f OnConnectFunc) TCPServiceOption {
+	return func(service *TCPService) {
 		service.onConnect = append(service.onConnect, f)
 	}
 }
 
-func SetOnClose(f CloseFunc) TcpServiceOption {
-	return func(service *TcpService) {
+// SetOnClose TODO
+func SetOnClose(f CloseFunc) TCPServiceOption {
+	return func(service *TCPService) {
 		service.onClose = append(service.onClose, f)
 	}
 }
 
-func SetKeepalive(f KeepaliveFunc) TcpServiceOption {
-	return func(service *TcpService) {
+// SetKeepalive TODO
+func SetKeepalive(f KeepaliveFunc) TCPServiceOption {
+	return func(service *TCPService) {
 		service.onKeepalive = append(service.onKeepalive, f)
 	}
 }
 
-func SetReload(f ReloadFunc) TcpServiceOption {
-	return func(service *TcpService) {
+// SetReload TODO
+func SetReload(f ReloadFunc) TCPServiceOption {
+	return func(service *TCPService) {
 		service.reload = append(service.reload, f)
 	}
 }
 
-// send event data to all connects client
-func (tcp *TcpService) SendAll(table string, data []byte) bool {
+// SendAll send event data to all connects client
+func (tcp *TCPService) SendAll(table string, data []byte) bool {
 	tcp.statusLock.Lock()
 	if tcp.status&serviceEnable <= 0 {
 		tcp.statusLock.Unlock()
@@ -105,9 +112,9 @@ func (tcp *TcpService) SendAll(table string, data []byte) bool {
 	return true
 }
 
-// send raw bytes data to all connects client
+// SendRaw send raw bytes data to all connects client
 // msg is the pack frame form func: pack
-func (tcp *TcpService) SendRaw(msg []byte) bool {
+func (tcp *TCPService) SendRaw(msg []byte) bool {
 	tcp.statusLock.Lock()
 	if tcp.status&serviceEnable <= 0 {
 		tcp.statusLock.Unlock()
@@ -121,7 +128,8 @@ func (tcp *TcpService) SendRaw(msg []byte) bool {
 	return true
 }
 
-func (tcp *TcpService) Start() {
+// Start TODO
+func (tcp *TCPService) Start() {
 	tcp.statusLock.Lock()
 	if tcp.status&serviceEnable <= 0 {
 		tcp.statusLock.Unlock()
@@ -132,7 +140,7 @@ func (tcp *TcpService) Start() {
 	}
 	tcp.statusLock.Unlock()
 	go func() {
-		dns := fmt.Sprintf("%s:%d", tcp.Ip, tcp.Port)
+		dns := fmt.Sprintf("%s:%d", tcp.IP, tcp.Port)
 		listen, err := net.Listen("tcp", dns)
 		if err != nil {
 			log.Errorf("[E] tcp service listen with error: %+v", err)
@@ -164,7 +172,8 @@ func (tcp *TcpService) Start() {
 	}()
 }
 
-func (tcp *TcpService) Close() {
+// Close TODO
+func (tcp *TCPService) Close() {
 	if tcp.status&serviceClosed > 0 {
 		return
 	}
@@ -183,7 +192,8 @@ func (tcp *TcpService) Close() {
 	log.Debugf("[D] tcp service closed.")
 }
 
-func (tcp *TcpService) Reload() {
+// Reload TODO
+func (tcp *TCPService) Reload() {
 	tcp.ctx.Reload()
 	log.Debugf("[D] tcp service reload with new config：%+v", tcp.ctx.Config.TCP)
 	tcp.statusLock.Lock()
@@ -202,7 +212,7 @@ func (tcp *TcpService) Reload() {
 	tcp.Start()
 }
 
-func (tcp *TcpService) keepalive() {
+func (tcp *TCPService) keepalive() {
 	if tcp.status&serviceEnable <= 0 {
 		return
 	}
@@ -219,6 +229,7 @@ func (tcp *TcpService) keepalive() {
 	}
 }
 
-func (tcp *TcpService) Name() string {
+// Name TODO
+func (tcp *TCPService) Name() string {
 	return "tcp"
 }

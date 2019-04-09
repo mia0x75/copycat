@@ -11,16 +11,18 @@ import (
 	"github.com/mia0x75/copycat/services"
 )
 
-type control struct {
+// Control TODO
+type Control struct {
 	conn *net.TCPConn
 }
 
-func NewClient(ctx *g.Context) *control {
+// NewClient TODO
+func NewClient(ctx *g.Context) *Control {
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", ctx.Config.Control.Listen)
 	if err != nil {
 		log.Panicf("[P] start control with error: %+v", err)
 	}
-	con := &control{}
+	con := &Control{}
 	con.conn, err = net.DialTCP("tcp", nil, tcpAddr)
 	if err != nil {
 		log.Panicf("[P] start control with error: %+v", err)
@@ -28,12 +30,13 @@ func NewClient(ctx *g.Context) *control {
 	return con
 }
 
-func (con *control) Close() {
+// Close TODO
+func (con *Control) Close() {
 	con.conn.Close()
 }
 
-// -stop
-func (con *control) Stop() {
+// Stop TODO
+func (con *Control) Stop() {
 	data := services.Pack(CMD_STOP, []byte(""))
 	con.conn.Write(data)
 	var buf = make([]byte, 1024)
@@ -43,13 +46,13 @@ func (con *control) Stop() {
 }
 
 // Reload 热更新
-func (con *control) Reload(serviceName string) {
+func (con *Control) Reload(serviceName string) {
 	data := services.Pack(CMD_RELOAD, []byte(serviceName))
 	con.conn.Write(data)
 }
 
-// -members
-func (con *control) ShowMembers() {
+// ShowMembers TODO
+func (con *Control) ShowMembers() {
 	data := services.Pack(CMD_SHOW_MEMBERS, []byte(""))
 	con.conn.Write(data)
 	var buf = make([]byte, 40960)

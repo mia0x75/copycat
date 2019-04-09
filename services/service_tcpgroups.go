@@ -20,7 +20,7 @@ func newGroups(ctx *g.Context) *tcpGroups {
 		ctx:  ctx,
 	}
 	for _, group := range ctx.Config.TCP.Groups {
-		tcpGroup := newTcpGroup(group)
+		tcpGroup := newTCPGroup(group)
 		g.add(tcpGroup)
 	}
 	return g
@@ -29,7 +29,7 @@ func newGroups(ctx *g.Context) *tcpGroups {
 func (groups *tcpGroups) reload() {
 	groups.close()
 	for _, group := range groups.ctx.Config.TCP.Groups {
-		tcpGroup := newTcpGroup(group)
+		tcpGroup := newTCPGroup(group)
 		groups.add(tcpGroup)
 	}
 }

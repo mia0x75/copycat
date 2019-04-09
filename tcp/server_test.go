@@ -11,8 +11,8 @@ import (
 
 func TestNewServer(t *testing.T) {
 	address := "127.0.0.1:7771"
-	server := NewServer(context.Background(), address, SetOnServerMessage(func(node *ClientNode, msgId int64, data []byte) {
-		node.Send(msgId, data)
+	server := NewServer(context.Background(), address, SetOnServerMessage(func(node *ClientNode, msgID int64, data []byte) {
+		node.Send(msgID, data)
 	}))
 	server.Start()
 	defer server.Close()

@@ -26,11 +26,17 @@ import (
 )
 
 const (
+	// Version 当前版本和编译序号
 	Version = "${version}.${build}"
+	// Git 编译对应的Git提交相关信息
 	Git     = "${git}"
+	// Compile 编译时间和编译环境
 	Compile = "${compile}"
+	// Branch 编译对应的Git分支
 	Branch  = "${branch}"
+	// Distro 编译对应的系统
 	Distro  = "${distro}"
+	// Kernel 编译对应的内核
 	Kernel  = "${kernel}"
 )
 

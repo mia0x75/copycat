@@ -6,15 +6,22 @@ import (
 	"github.com/hashicorp/consul/api"
 )
 
+// Session TODO
 type Session struct {
 	session *api.Session
 }
+
+// ISession TODO
 type ISession interface {
+	// Create TODO
 	Create(timeout int64) (string, error)
-	Destroy(sessionId string) error
-	Renew(sessionId string) error
+	// Destroy TODO
+	Destroy(sessionID string) error
+	// Renew TODO
+	Renew(sessionID string) error
 }
 
+// NewSession TODO
 func NewSession(session *api.Session) ISession {
 	s := &Session{
 		session: session,
@@ -22,7 +29,7 @@ func NewSession(session *api.Session) ISession {
 	return s
 }
 
-// create a session
+// Create create a session
 // timeout unit is seconds
 // return session id and error, if everything is ok, error should be nil
 func (session *Session) Create(timeout int64) (string, error) {
@@ -40,16 +47,16 @@ func (session *Session) Create(timeout int64) (string, error) {
 	return ID, err
 }
 
-// destory a session
+// Destroy destory a session
 // sessionId is the value return from Create
-func (session *Session) Destroy(sessionId string) error {
-	_, err := session.session.Destroy(sessionId, nil)
+func (session *Session) Destroy(sessionID string) error {
+	_, err := session.session.Destroy(sessionID, nil)
 	return err
 }
 
-// refresh a session
+// Renew refresh a session
 // sessionId is the value return from Create
-func (session *Session) Renew(sessionId string) error {
-	_, _, err := session.session.Renew(sessionId, nil)
+func (session *Session) Renew(sessionID string) error {
+	_, _, err := session.session.Renew(sessionID, nil)
 	return err
 }

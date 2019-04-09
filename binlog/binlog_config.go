@@ -10,6 +10,7 @@ import (
 	"github.com/mia0x75/copycat/services"
 )
 
+// Binlog TODO
 type Binlog struct {
 	canal.DummyEventHandler                             // github.com/siddontang/go-mysql interface
 	Config                  *g.DatabaseConfig           // config
@@ -32,8 +33,13 @@ type Binlog struct {
 	onEvent      []OnEventFunc
 }
 
-type BinlogOption func(h *Binlog)
+// Option TODO
+type Option func(h *Binlog)
+
+// PosChangeFunc TODO
 type PosChangeFunc func(r []byte)
+
+// OnEventFunc TODO
 type OnEventFunc func(table string, data []byte)
 
 const (

@@ -13,8 +13,8 @@ import (
 
 func main() {
 	address := "127.0.0.1:7771"
-	server := tcp.NewServer(context.Background(), address, tcp.SetOnServerMessage(func(node *tcp.ClientNode, msgId int64, data []byte) {
-		node.Send(msgId, data)
+	server := tcp.NewServer(context.Background(), address, tcp.SetOnServerMessage(func(node *tcp.ClientNode, msgID int64, data []byte) {
+		node.Send(msgID, data)
 	}))
 	server.Start()
 	defer server.Close()

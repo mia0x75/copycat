@@ -195,7 +195,7 @@ func (tcp *TcpService) Start() {
 			for {
 				m, err := tcp.sService.Get()
 				if err == nil && m != nil {
-					leaderAddress := fmt.Sprintf("%v:%v", m.ServiceIp, m.Port)
+					leaderAddress := fmt.Sprintf("%v:%v", m.ServiceIP, m.Port)
 					log.Infof("[I] connect to leader %v", leaderAddress)
 					tcp.client.Connect(leaderAddress, time.Second*3)
 					break
@@ -256,7 +256,7 @@ func (tcp *TcpService) ShowMembers() string {
 		if member.IsLeader {
 			role = "leader"
 		}
-		res += fmt.Sprintf("%-6d| %-43s | %-8s | %s\r\n", i, fmt.Sprintf("%s(%s:%d)", "", member.ServiceIp, member.Port), role, member.Status)
+		res += fmt.Sprintf("%-6d| %-43s | %-8s | %s\r\n", i, fmt.Sprintf("%s(%s:%d)", "", member.ServiceIP, member.Port), role, member.Status)
 	}
 	res += fmt.Sprintf("------+---------------------------------------------+----------+---------------\r\n")
 	return res

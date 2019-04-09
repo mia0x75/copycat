@@ -9,6 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// Server TODO
 type Server struct {
 	Address           string
 	lock              *sync.Mutex
@@ -23,20 +24,26 @@ type Server struct {
 	onMessageCallback []OnServerMessageFunc
 	codec             ICodec
 }
+
+// Clients TODO
 type Clients []*ClientNode
-type OnServerMessageFunc func(node *ClientNode, msgId int64, data []byte)
+
+// OnServerMessageFunc TODO
+type OnServerMessageFunc func(node *ClientNode, msgID int64, data []byte)
+
+// ServerOption TODO
 type ServerOption func(s *Server)
 
 var keepalivePackage = []byte{byte(0)}
 
-// set receive msg callback func
+// SetOnServerMessage set receive msg callback func
 func SetOnServerMessage(f ...OnServerMessageFunc) ServerOption {
 	return func(s *Server) {
 		s.onMessageCallback = append(s.onMessageCallback, f...)
 	}
 }
 
-// set codec, codes use for encode and descode msg
+// SetServerCodec set codec, codes use for encode and descode msg
 // codec must implement from ICodec
 func SetServerCodec(codec ICodec) ServerOption {
 	return func(s *Server) {
@@ -44,12 +51,12 @@ func SetServerCodec(codec ICodec) ServerOption {
 	}
 }
 
-// new a tcp server
+// NewServer new a tcp server
 // ctx like content.Background
 // address like 127.0.0.1:7770
 // opts like
-// tcp.SetOnServerMessage(func(node *tcp.ClientNode, msgId int64, data []byte) {
-//		node.Send(msgId, data)
+// tcp.SetOnServerMessage(func(node *tcp.ClientNode, msgID int64, data []byte) {
+//		node.Send(msgID, data)
 // })
 func NewServer(ctx context.Context, address string, opts ...ServerOption) *Server {
 	tcp := &Server{
@@ -72,7 +79,7 @@ func NewServer(ctx context.Context, address string, opts ...ServerOption) *Serve
 	return tcp
 }
 
-// start tcp service
+// Start start tcp service
 func (tcp *Server) Start() {
 	go func() {
 		listen, err := net.Listen("tcp", tcp.Address)
@@ -113,13 +120,13 @@ func (tcp *Server) Start() {
 }
 
 // Broadcast data to all connected clients
-func (tcp *Server) Broadcast(msgId int64, data []byte) {
+func (tcp *Server) Broadcast(msgID int64, data []byte) {
 	for _, client := range tcp.clients {
-		client.AsyncSend(msgId, data)
+		client.AsyncSend(msgID, data)
 	}
 }
 
-// close service
+// Close close service
 func (tcp *Server) Close() {
 	log.Debugf("[D] tcp service closing, waiting for buffer send complete.")
 	if tcp.listener != nil {

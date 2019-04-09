@@ -10,10 +10,15 @@ import (
 )
 
 const (
-	CMD_ERROR = iota // 错误响应
-	CMD_TICK         // 心跳包
+	// CMD_ERROR 错误响应
+	CMD_ERROR = iota
+	// CMD_TICK 心跳包
+	CMD_TICK
+	// CMD_STOP TODO
 	CMD_STOP
+	// CMD_RELOAD TODO
 	CMD_RELOAD
+	// CMD_SHOW_MEMBERS TODO
 	CMD_SHOW_MEMBERS
 )
 
@@ -25,7 +30,8 @@ const (
 	tcpNodeOnline = 1 << iota
 )
 
-type TcpClientNode struct {
+// TCPClientNode TODO
+type TCPClientNode struct {
 	conn       *net.Conn // 客户端连接进来的资源句柄
 	recvBuf    []byte    // 读缓冲区
 	status     int
@@ -37,7 +43,8 @@ type TcpClientNode struct {
 	showmember ShowMemberFunc
 }
 
-type TcpService struct {
+// TCPService TODO
+type TCPService struct {
 	Address    string
 	lock       *sync.Mutex
 	ctx        *g.Context
@@ -53,11 +60,20 @@ type TcpService struct {
 
 var (
 	packDataTickOk = services.Pack(CMD_TICK, []byte("ok"))
-	nodeOffline    = errors.New("tcp node offline")
+	errNodeOffline = errors.New("tcp node offline")
 )
 
+// ShowMemberFunc TODO
 type ShowMemberFunc func() string
+
+// ReloadFunc TODO
 type ReloadFunc func(service string)
+
+// StopFunc TODO
 type StopFunc func()
-type ControlOption func(tcp *TcpService)
-type nodeOption func(node *TcpClientNode)
+
+// Option TODO
+type Option func(tcp *TCPService)
+
+// nodeOption TODO
+type nodeOption func(node *TCPClientNode)

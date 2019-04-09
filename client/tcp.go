@@ -52,6 +52,7 @@ func hasCmd(cmd int) bool {
 		cmd == CMD_POS
 }
 
+// Client TODO
 type Client struct {
 	node          *Node
 	lock          *sync.Mutex
@@ -73,6 +74,7 @@ type serverNode struct {
 	connects uint64
 }
 
+// Node TODO
 type Node struct {
 	conn   *net.TCPConn
 	status int
@@ -82,10 +84,14 @@ type wait struct {
 	closed bool
 }
 
-type ClientOption func(client *Client)
+// Option TODO
+type Option func(client *Client)
+
+// OnEventFunc TODO
 type OnEventFunc func(data map[string]interface{})
 
-func NewClient(opts ...ClientOption) *Client {
+// NewClient TODO
+func NewClient(opts ...Option) *Client {
 	client := &Client{
 		status:    clientOffline,
 		node:      nil,
@@ -166,13 +172,15 @@ func NewClient(opts ...ClientOption) *Client {
 	return client
 }
 
-func OnEventOption(f OnEventFunc) ClientOption {
+// OnEventOption TODO
+func OnEventOption(f OnEventFunc) Option {
 	return func(client *Client) {
 		client.onevent = append(client.onevent, f)
 	}
 }
 
-func SetServices(ss []string) ClientOption {
+// SetServices TODO
+func SetServices(ss []string) Option {
 	return func(client *Client) {
 		for _, s := range ss {
 			temp := strings.Split(s, ":")
@@ -187,13 +195,14 @@ func SetServices(ss []string) ClientOption {
 	}
 }
 
-func SetConsulAddress(a string) ClientOption {
+// SetConsulAddress TODO
+func SetConsulAddress(a string) Option {
 	return func(client *Client) {
 		client.consulAddress = a
 	}
 }
 
-// 这里的主题，其实就是 database.table 数据库.表明
+// Subscribe 这里的主题，其实就是 database.table 数据库.表明
 // 支持正则，比如test库下面的所有表：test.*
 func (client *Client) Subscribe(topics ...string) {
 	// 订阅主题
@@ -396,6 +405,7 @@ func (client *Client) disconnect() {
 	}
 }
 
+// Close TODO
 func (client *Client) Close() {
 	if client.status&clientOffline > 0 {
 		log.Debugf("[D] client close was called, but not running")

@@ -9,7 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// context
+// Context 上下文
 type Context struct {
 	// canal context
 	Ctx context.Context
@@ -33,14 +33,17 @@ func NewContext() *Context {
 	return ctx
 }
 
+// Stop TODO
 func (ctx *Context) Stop() {
 	ctx.cancelChan <- struct{}{}
 }
 
+// Done TODO
 func (ctx *Context) Done() <-chan struct{} {
 	return ctx.cancelChan
 }
 
+// Reload TODO
 func (ctx *Context) Reload() {
 	ctx.Config = Reload()
 }

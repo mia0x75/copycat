@@ -10,6 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// SyncClient TODO
 type SyncClient struct {
 	ctx               context.Context
 	buffer            []byte
@@ -29,39 +30,45 @@ type SyncClient struct {
 	connectTimeout    time.Duration
 }
 
+// SyncClientOption TODO
 type SyncClientOption func(tcp *SyncClient)
 
-// 用来设置编码解码的接口
+// SetSyncCoder 用来设置编码解码的接口
 func SetSyncCoder(codec ICodec) SyncClientOption {
 	return func(tcp *SyncClient) {
 		tcp.codec = codec
 	}
 }
 
+// SetSyncBufferSize TODO
 func SetSyncBufferSize(size int) SyncClientOption {
 	return func(tcp *SyncClient) {
 		tcp.bufferSize = size
 	}
 }
 
+// SetWriteTimeout TODO
 func SetWriteTimeout(t time.Duration) SyncClientOption {
 	return func(tcp *SyncClient) {
 		tcp.writeTimeout = t
 	}
 }
 
+// SetReadTimeout TODO
 func SetReadTimeout(t time.Duration) SyncClientOption {
 	return func(tcp *SyncClient) {
 		tcp.readTimeout = t
 	}
 }
 
+// SetConnectTimeout TODO
 func SetConnectTimeout(t time.Duration) SyncClientOption {
 	return func(tcp *SyncClient) {
 		tcp.connectTimeout = t
 	}
 }
 
+// NewSyncClient TODO
 func NewSyncClient(ip string, port int, opts ...SyncClientOption) *SyncClient {
 	c := &SyncClient{
 		buffer:            make([]byte, 0),
@@ -84,10 +91,10 @@ func NewSyncClient(ip string, port int, opts ...SyncClientOption) *SyncClient {
 	return c
 }
 
-// sync wait return
+// Send sync wait return
 func (tcp *SyncClient) Send(data []byte) ([]byte, error) {
 	if tcp.status&statusConnect <= 0 {
-		return nil, NotConnect
+		return nil, errNotConnect
 	}
 	if tcp.writeTimeout > 0 {
 		tcp.conn.SetWriteDeadline(time.Now().Add(tcp.writeTimeout))
@@ -112,10 +119,10 @@ func (tcp *SyncClient) Send(data []byte) ([]byte, error) {
 	return res, err
 }
 
-// use like go tcp.Connect()
+// Connect use like go tcp.Connect()
 func (tcp *SyncClient) Connect() error {
 	if tcp.status&statusConnect > 0 {
-		return IsConnected
+		return errIsConnected
 	}
 	d := net.Dialer{Timeout: tcp.connectTimeout}
 	conn, err := d.Dial("tcp", fmt.Sprintf("%s:%d", tcp.ip, tcp.port))
@@ -130,6 +137,7 @@ func (tcp *SyncClient) Connect() error {
 	return nil
 }
 
+// Disconnect TODO
 func (tcp *SyncClient) Disconnect() {
 	if tcp.status&statusConnect <= 0 {
 		return

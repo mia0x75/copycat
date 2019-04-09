@@ -14,11 +14,11 @@ func TestNewLock(t *testing.T) {
 	key := "test"
 	timeout := int64(10)
 	session := NewSession(client.Session())
-	sessionId, err := session.Create(10)
+	sessionID, err := session.Create(10)
 	if err != nil {
 		t.Errorf("session create error")
 	}
-	lock := NewLock(sessionId, client.KV())
+	lock := NewLock(sessionID, client.KV())
 
 	err = lock.Delete(key)
 	if err != nil {

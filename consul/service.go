@@ -18,20 +18,25 @@ const (
 	statusOffline = "offline"
 )
 
-var membersEmpty = errors.New("members is empty")
-var leaderNotFound = errors.New("leader not found")
-var notRegister = errors.New("service not register")
+var (
+	errMembersEmpty   = errors.New("members is empty")
+	errLeaderNotFound = errors.New("leader not found")
+	errNotRegister    = errors.New("service not register")
+)
 
+// ServiceMember TODO
 type ServiceMember struct {
 	IsLeader  bool
 	ServiceID string
 	Status    string
-	ServiceIp string
+	ServiceIP string
 	Port      int
 }
+
+// Service TODO
 type Service struct {
 	ServiceName string //service name, like: service.add
-	ServiceIp   string // if ServiceHost is 0.0.0.0, ServiceIp must set,
+	ServiceIP   string // if ServiceHost is 0.0.0.0, ServiceIp must set,
 	// like 127.0.0.1 or 192.168.9.12 or 114.55.56.168
 	ServicePort int         // service port, like: 9998
 	ServiceID   string      //serviceID = fmt.Sprintf("%s-%s-%d", name, ip, port)
@@ -39,19 +44,21 @@ type Service struct {
 	status      int         // register status
 	lock        *sync.Mutex //sync lock
 	leader      bool
-	Ttl         int
+	TTL         int
 }
 
+// IService TODO
 type IService interface {
 	Deregister() error
 	Register() error
-	UpdateTtl() error
+	UpdateTTL() error
 	SetLeader(bool)
 }
 
+// ServiceOption TODO
 type ServiceOption func(s *Service)
 
-// new a service
+// NewService new a service
 // name: service name
 // host: service host like 0.0.0.0 or 127.0.0.1
 // port: service port, like 9998
@@ -67,9 +74,9 @@ func NewService(
 ) IService {
 	sev := &Service{
 		ServiceName: name,
-		ServiceIp:   host,
+		ServiceIP:   host,
 		ServicePort: port,
-		Ttl:         15,
+		TTL:         15,
 		status:      0,
 		leader:      false,
 		lock:        new(sync.Mutex),
@@ -82,23 +89,26 @@ func NewService(
 	return sev
 }
 
+// SetLeader TODO
 func (sev *Service) SetLeader(leader bool) {
 	sev.leader = leader
 }
 
+// Deregister TODO
 func (sev *Service) Deregister() error {
 	err := sev.agent.ServiceDeregister(sev.ServiceID)
 	if err != nil {
-		log.Errorf("[E] deregister service error: ", err.Error())
+		log.Errorf("[E] deregister service error: %s", err.Error())
 		return err
 	}
 	err = sev.agent.CheckDeregister(sev.ServiceID)
 	if err != nil {
-		log.Println("deregister check error: ", err.Error())
+		log.Errorf("[E] deregister check error: %s", err.Error())
 	}
 	return err
 }
 
+// Register TODO
 func (sev *Service) Register() error {
 	sev.lock.Lock()
 	if sev.status&Registered <= 0 {
@@ -109,7 +119,7 @@ func (sev *Service) Register() error {
 	regis := &api.AgentServiceRegistration{
 		ID:      sev.ServiceID,
 		Name:    sev.ServiceName,
-		Address: sev.ServiceIp,
+		Address: sev.ServiceIP,
 		Port:    sev.ServicePort,
 		Tags:    []string{fmt.Sprintf("isleader:%v", sev.leader)},
 	}
@@ -118,7 +128,7 @@ func (sev *Service) Register() error {
 		return err
 	}
 	// initial register service check
-	check := api.AgentServiceCheck{TTL: fmt.Sprintf("%ds", sev.Ttl), Status: "passing"}
+	check := api.AgentServiceCheck{TTL: fmt.Sprintf("%ds", sev.TTL), Status: "passing"}
 	err = sev.agent.CheckRegister(&api.AgentCheckRegistration{
 		ID:                sev.ServiceID,
 		Name:              sev.ServiceName,
@@ -128,9 +138,10 @@ func (sev *Service) Register() error {
 	return err
 }
 
-func (sev *Service) UpdateTtl() error {
+// UpdateTTL TODO
+func (sev *Service) UpdateTTL() error {
 	if sev.status&Registered <= 0 {
-		return notRegister
+		return errNotRegister
 	}
 	return sev.agent.UpdateTTL(sev.ServiceID, fmt.Sprintf("isleader:%v", sev.leader), "passing")
 }

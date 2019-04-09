@@ -7,18 +7,18 @@ import (
 )
 
 func TestCodec_Encode(t *testing.T) {
-	msgId := int64(1)
+	msgID := int64(1)
 	data := []byte("hello")
 
 	codec := &Codec{}
-	cc := codec.Encode(msgId, data)
+	cc := codec.Encode(msgID, data)
 
 	mid, c, p, err := codec.Decode(cc)
 	fmt.Println(mid, c, p, err)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
-	if mid != msgId {
+	if mid != msgID {
 		t.Error("error")
 	}
 
@@ -38,7 +38,7 @@ func TestCodec_Encode(t *testing.T) {
 	if err != nil {
 		t.Errorf(err.Error())
 	}
-	if mid != msgId {
+	if mid != msgID {
 		t.Error("error")
 	}
 
@@ -52,7 +52,7 @@ func TestCodec_Encode(t *testing.T) {
 	if err != nil {
 		t.Errorf(err.Error())
 	}
-	if mid != msgId {
+	if mid != msgID {
 		t.Error("error")
 	}
 
@@ -67,7 +67,7 @@ func TestCodec_Encode(t *testing.T) {
 	if err == nil {
 		t.Errorf("error")
 	}
-	if mid == msgId {
+	if mid == msgID {
 		t.Error("error")
 	}
 

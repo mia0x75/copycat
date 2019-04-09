@@ -13,8 +13,8 @@ import (
 	"github.com/mia0x75/copycat/services"
 )
 
-func newNode(ctx *g.Context, conn *net.Conn, opts ...nodeOption) *TcpClientNode {
-	node := &TcpClientNode{
+func newNode(ctx *g.Context, conn *net.Conn, opts ...nodeOption) *TCPClientNode {
+	node := &TCPClientNode{
 		conn:    conn,
 		recvBuf: make([]byte, 0),
 		status:  tcpNodeOnline,
@@ -31,24 +31,24 @@ func newNode(ctx *g.Context, conn *net.Conn, opts ...nodeOption) *TcpClientNode 
 }
 
 func nodeStop(s StopFunc) nodeOption {
-	return func(n *TcpClientNode) {
+	return func(n *TCPClientNode) {
 		n.stop = s
 	}
 }
 
 func nodeReload(s ReloadFunc) nodeOption {
-	return func(n *TcpClientNode) {
+	return func(n *TCPClientNode) {
 		n.reload = s
 	}
 }
 
 func nodeShowMembers(s ShowMemberFunc) nodeOption {
-	return func(n *TcpClientNode) {
+	return func(n *TCPClientNode) {
 		n.showmember = s
 	}
 }
 
-func (node *TcpClientNode) close() {
+func (node *TCPClientNode) close() {
 	node.lock.Lock()
 	defer node.lock.Unlock()
 	if node.status&tcpNodeOnline <= 0 {
@@ -60,19 +60,19 @@ func (node *TcpClientNode) close() {
 	}
 }
 
-func (node *TcpClientNode) send(data []byte) (int, error) {
+func (node *TCPClientNode) send(data []byte) (int, error) {
 	if node.status&tcpNodeOnline <= 0 {
-		return 0, nodeOffline
+		return 0, errNodeOffline
 	}
 	(*node.conn).SetWriteDeadline(time.Now().Add(time.Second * 3))
 	return (*node.conn).Write(data)
 }
 
-func (node *TcpClientNode) setReadDeadline(t time.Time) {
+func (node *TCPClientNode) setReadDeadline(t time.Time) {
 	(*node.conn).SetReadDeadline(t)
 }
 
-func (node *TcpClientNode) onMessage(msg []byte) {
+func (node *TCPClientNode) onMessage(msg []byte) {
 	log.Debugf("[D] receive msg: %+v", msg)
 	node.recvBuf = append(node.recvBuf, msg...)
 	for {
@@ -116,7 +116,7 @@ func (node *TcpClientNode) onMessage(msg []byte) {
 	}
 }
 
-func (node *TcpClientNode) readMessage() {
+func (node *TCPClientNode) readMessage() {
 	var readBuffer [tcpDefaultReadBufferSize]byte
 	// 设定3秒超时，如果添加到分组成功，超时限制将被清除
 	for {

@@ -69,7 +69,7 @@ type TCPConfig struct {
 	Enabled   bool              `json:"enabled"`    //
 	Addr      string            `json:"addr"`       //
 	Port      uint16            `json:"port"`       //
-	ServiceIp string            `json:"service_ip"` //
+	ServiceIP string            `json:"service_ip"` //
 	Groups    []*TCPGroupConfig `json:"groups"`     //
 }
 

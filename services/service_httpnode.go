@@ -10,7 +10,7 @@ import (
 	"github.com/mia0x75/copycat/utils/http"
 )
 
-func newHttpNode(ctx *g.Context, url string) *httpNode {
+func newHTTPNode(ctx *g.Context, url string) *httpNode {
 	return &httpNode{
 		url:       url,
 		sendQueue: make(chan string, httpMaxSendQueue),

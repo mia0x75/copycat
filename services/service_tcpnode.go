@@ -34,12 +34,14 @@ func newNode(ctx *g.Context, conn *net.Conn, opts ...NodeOption) *tcpClientNode 
 	return node
 }
 
+// NodeClose TODO
 func NodeClose(f NodeFunc) NodeOption {
 	return func(n *tcpClientNode) {
 		n.onclose = append(n.onclose, f)
 	}
 }
 
+// NodePro TODO
 func NodePro(f SetProFunc) NodeOption {
 	return func(n *tcpClientNode) {
 		n.onpro = f

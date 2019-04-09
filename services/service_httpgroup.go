@@ -6,14 +6,14 @@ import (
 	"github.com/mia0x75/copycat/g"
 )
 
-func newHttpGroup(ctx *g.Context, groupConfig *g.HTTPGroupConfig) *httpGroup {
+func newHTTPGroup(ctx *g.Context, groupConfig *g.HTTPGroupConfig) *httpGroup {
 	group := &httpGroup{
 		name:   groupConfig.Name,
 		filter: groupConfig.Filter,
 		nodes:  make(httpNodes, len(groupConfig.Endpoints)),
 	}
 	for i, url := range groupConfig.Endpoints {
-		group.nodes[i] = newHttpNode(ctx, url)
+		group.nodes[i] = newHTTPNode(ctx, url)
 	}
 	return group
 }

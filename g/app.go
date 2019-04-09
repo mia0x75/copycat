@@ -17,13 +17,9 @@ import (
 	"github.com/mia0x75/copycat/utils/path"
 )
 
-var ctx *daemon.Context = nil
+var ctx *daemon.Context
 
-const (
-	VERSION = "1.0.0"
-)
-
-// app init
+// Init app init
 // config path parse
 // cache path parse
 // log path parse
@@ -69,6 +65,7 @@ func Init() {
 	runtime.GOMAXPROCS(runtime.NumCPU()) //指定cpu为多核运行 旧版本兼容
 }
 
+// Release TODO
 func Release() {
 	// delete pid when exit
 	file.Remove(PID_FILE)
@@ -78,7 +75,7 @@ func Release() {
 	}
 }
 
-// show usage
+// Usage show usage
 func Usage() {
 	fmt.Println("copycat                                   : start service")
 	fmt.Println("copycat -h|-help                          : show this message")
@@ -89,7 +86,7 @@ func Usage() {
 	fmt.Println("copycat -d|-daemon                        : run as daemon process")
 }
 
-// get unique key, param if file path
+// GetKey get unique key, param if file path
 // if file does not exists, try to create it, and write a unique key
 // return the unique key
 // if exists, read file and return it
@@ -111,7 +108,7 @@ func GetKey(sessionFile string) string {
 	return key
 }
 
-// run as daemon process
+// DaemonProcess run as daemon process
 func DaemonProcess(d bool) bool {
 	if d {
 		exeFile := strings.Replace(os.Args[0], "\\", "/", -1)

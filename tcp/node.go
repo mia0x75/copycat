@@ -14,9 +14,13 @@ const (
 	tcpNodeOnline   = 1 << iota
 )
 
+// NodeFunc TODO
 type NodeFunc func(n *ClientNode)
+
+// NodeOption TODO
 type NodeOption func(n *ClientNode)
 
+// ClientNode TODO
 type ClientNode struct {
 	conn              *net.Conn
 	sendQueue         chan []byte
@@ -80,16 +84,18 @@ func (node *ClientNode) close() {
 	}
 }
 
-func (node *ClientNode) Send(msgId int64, data []byte) (int, error) {
-	sendData := node.codec.Encode(msgId, data)
+// Send TODO
+func (node *ClientNode) Send(msgID int64, data []byte) (int, error) {
+	sendData := node.codec.Encode(msgID, data)
 	return (*node.conn).Write(sendData)
 }
 
-func (node *ClientNode) AsyncSend(msgId int64, data []byte) {
+// AsyncSend TODO
+func (node *ClientNode) AsyncSend(msgID int64, data []byte) {
 	if node.status&tcpNodeOnline <= 0 {
 		return
 	}
-	senddata := node.codec.Encode(msgId, data)
+	senddata := node.codec.Encode(msgID, data)
 	node.sendQueue <- senddata
 }
 
@@ -136,23 +142,23 @@ func (node *ClientNode) onMessage(msg []byte) {
 	node.recvBuf = append(node.recvBuf, msg...)
 	for {
 		bufferLen := len(node.recvBuf)
-		msgId, content, pos, err := node.codec.Decode(node.recvBuf)
+		msgID, content, pos, err := node.codec.Decode(node.recvBuf)
 		if err != nil {
 			node.recvBuf = make([]byte, 0)
 			log.Errorf("[E] node.recvBuf error %v", err)
 			return
 		}
-		if msgId <= 0 {
+		if msgID <= 0 {
 			return
 		}
 		if len(node.recvBuf) >= pos {
 			node.recvBuf = append(node.recvBuf[:0], node.recvBuf[pos:]...)
 		} else {
 			node.recvBuf = make([]byte, 0)
-			log.Errorf("[E] pos %v(olen=%v) error, cmd=%v, content=%v(%v) len is %v, data is: %+v", pos, bufferLen, msgId, content, string(content), len(node.recvBuf), node.recvBuf)
+			log.Errorf("[E] pos %v(olen=%v) error, cmd=%v, content=%v(%v) len is %v, data is: %+v", pos, bufferLen, msgID, content, string(content), len(node.recvBuf), node.recvBuf)
 		}
 		for _, f := range node.onMessageCallback {
-			f(node, msgId, content)
+			f(node, msgID, content)
 		}
 	}
 }

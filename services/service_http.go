@@ -9,16 +9,16 @@ import (
 	"github.com/mia0x75/copycat/g"
 )
 
-// 创建一个新的http服务
-func NewHttpService(ctx *g.Context) *HttpService {
+// NewHTTPService 创建一个新的http服务
+func NewHTTPService(ctx *g.Context) *HTTPService {
 	log.Debugf("[D] start http service with config: %+v", ctx.Config.HTTP)
 	if !ctx.Config.HTTP.Enabled {
-		return &HttpService{
+		return &HTTPService{
 			status: 0,
 		}
 	}
 	gc := len(ctx.Config.HTTP.Groups)
-	client := &HttpService{
+	client := &HTTPService{
 		lock:     new(sync.Mutex),
 		groups:   make(httpGroups, gc),
 		status:   serviceEnable,
@@ -26,7 +26,7 @@ func NewHttpService(ctx *g.Context) *HttpService {
 		ctx:      ctx,
 	}
 	for _, groupConfig := range ctx.Config.HTTP.Groups {
-		httpGroup := newHttpGroup(ctx, groupConfig)
+		httpGroup := newHTTPGroup(ctx, groupConfig)
 		client.lock.Lock()
 		client.groups.add(httpGroup)
 		client.lock.Unlock()
@@ -35,15 +35,16 @@ func NewHttpService(ctx *g.Context) *HttpService {
 	return client
 }
 
-// 开始服务
-func (client *HttpService) Start() {
+// Start 开始服务
+func (client *HTTPService) Start() {
 	if client.status&serviceEnable <= 0 {
 		return
 	}
 	client.groups.sendService()
 }
 
-func (client *HttpService) SendAll(table string, data []byte) bool {
+// SendAll TODO
+func (client *HTTPService) SendAll(table string, data []byte) bool {
 	if client.status&serviceEnable <= 0 {
 		return false
 	}
@@ -51,13 +52,15 @@ func (client *HttpService) SendAll(table string, data []byte) bool {
 	return true
 }
 
-func (client *HttpService) Close() {
+// Close TODO
+func (client *HTTPService) Close() {
 	log.Debug("[D] http service closing, waiting for buffer send complete.")
 	client.groups.wait()
 	log.Debug("[D] http service closed.")
 }
 
-func (client *HttpService) Reload() {
+// Reload TODO
+func (client *HTTPService) Reload() {
 	client.ctx.Reload()
 	log.Debug("[D] http service reloading...")
 
@@ -71,7 +74,7 @@ func (client *HttpService) Reload() {
 	}
 
 	for _, groupConfig := range client.ctx.Config.HTTP.Groups {
-		httpGroup := newHttpGroup(client.ctx, groupConfig)
+		httpGroup := newHTTPGroup(client.ctx, groupConfig)
 		client.lock.Lock()
 		client.groups.add(httpGroup)
 		client.lock.Unlock()
@@ -79,6 +82,7 @@ func (client *HttpService) Reload() {
 	log.Debug("[D] http service reloaded.")
 }
 
-func (client *HttpService) Name() string {
+// Name TODO
+func (client *HTTPService) Name() string {
 	return "http"
 }

@@ -21,7 +21,7 @@ func TestLeader_Register(t *testing.T) {
 		t.Errorf("register err")
 	}
 
-	err = leader1.UpdateTtl()
+	err = leader1.UpdateTTL()
 	if err != nil {
 		t.Errorf("UpdateTtl err")
 	}
@@ -31,7 +31,7 @@ func TestLeader_Register(t *testing.T) {
 		t.Errorf("Deregister err")
 	}
 
-	err = leader1.UpdateTtl()
+	err = leader1.UpdateTTL()
 	if err == nil {
 		t.Errorf("UpdateTtl err")
 	}

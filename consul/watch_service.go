@@ -8,8 +8,11 @@ import (
 )
 
 const (
+	// EventStatusChange TODO
 	EventStatusChange = iota + 1
+	// EventDelete TODO
 	EventDelete
+	// EventAdd TODO
 	EventAdd
 )
 
@@ -27,10 +30,10 @@ type WatchService struct {
 	//unlock unlockFunc
 }
 
-//type unlockFunc func() (bool, error)
+// WatchOption type unlockFunc func() (bool, error)
 type WatchOption func(w *WatchService)
 
-// watch service change
+// NewWatchService watch service change
 func NewWatchService(health *consul.Health, serviceName string, opts ...WatchOption) *WatchService {
 	w := &WatchService{
 		target: serviceName,
@@ -42,7 +45,7 @@ func NewWatchService(health *consul.Health, serviceName string, opts ...WatchOpt
 	return w
 }
 
-// watch service delete and change
+// Watch watch service delete and change
 func (cw *WatchService) Watch(watch func(int, *ServiceMember)) {
 	// Nil cw.addrs means it is initial called
 	// If get addrs, return to balancer
@@ -114,7 +117,7 @@ func (cw *WatchService) dialChange(watch func(int, *ServiceMember), addrs []*con
 			IsLeader:  leader,
 			ServiceID: u.Service.ID,
 			Status:    status,
-			ServiceIp: u.Service.Address,
+			ServiceIP: u.Service.Address,
 			Port:      u.Service.Port,
 		})
 	}
@@ -136,7 +139,7 @@ func (cw *WatchService) dialAdd(watch func(int, *ServiceMember), addrs []*consul
 			IsLeader:  leader,
 			ServiceID: u.Service.ID,
 			Status:    status,
-			ServiceIp: u.Service.Address,
+			ServiceIP: u.Service.Address,
 			Port:      u.Service.Port,
 		})
 	}
@@ -158,7 +161,7 @@ func (cw *WatchService) dialDelete(watch func(int, *ServiceMember), addrs []*con
 			IsLeader:  leader,
 			ServiceID: u.Service.ID,
 			Status:    status,
-			ServiceIp: u.Service.Address,
+			ServiceIP: u.Service.Address,
 			Port:      u.Service.Port,
 		})
 	}

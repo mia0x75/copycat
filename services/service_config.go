@@ -8,6 +8,7 @@ import (
 	"github.com/mia0x75/copycat/g"
 )
 
+// Service 服务接口
 type Service interface {
 	SendAll(table string, data []byte) bool // 服务广播
 	Start()                                 // 启动服务
@@ -36,7 +37,9 @@ const (
 )
 
 const (
+	// FlagSetPro TODO
 	FlagSetPro = iota
+	// FlagPing TODO
 	FlagPing
 )
 
@@ -54,7 +57,8 @@ type httpGroup struct {
 type httpNodes []*httpNode
 type httpGroups map[string]*httpGroup
 
-type HttpService struct {
+// HTTPService TODO
+type HTTPService struct {
 	Service                //
 	groups   httpGroups    //
 	lock     *sync.Mutex   // 互斥锁，修改资源时锁定
@@ -90,8 +94,13 @@ type tcpClientNode struct {
 	onpro            SetProFunc
 }
 
+// NodeFunc TODO
 type NodeFunc func(n *tcpClientNode)
+
+// SetProFunc TODO
 type SetProFunc func(n *tcpClientNode, groupName string) bool
+
+// NodeOption TODO
 type NodeOption func(n *tcpClientNode)
 
 type tcpClients []*tcpClientNode
@@ -103,16 +112,16 @@ type tcpGroup struct {
 	lock   *sync.Mutex
 }
 
-type TcpService struct {
+type TCPService struct {
 	Service
-	Ip          string      // 监听ip
+	IP          string      // 监听ip
 	Port        uint16      // 监听端口
 	lock        *sync.Mutex // 互斥锁，修改资源时锁定
 	statusLock  *sync.Mutex
 	ctx         *g.Context      // *context.Context
 	listener    *net.Listener   //
 	wg          *sync.WaitGroup //
-	ServiceIp   string
+	ServiceIP   string
 	status      int
 	token       string
 	conn        *net.TCPConn
@@ -126,17 +135,30 @@ type TcpService struct {
 }
 
 var (
-	_ Service = &TcpService{}
-	_ Service = &HttpService{}
+	_ Service = &TCPService{}
+	_ Service = &HTTPService{}
 
 	packDataTickOk = Pack(CMD_TICK, []byte("ok"))
 	packDataSetPro = Pack(CMD_SET_PRO, []byte("ok"))
 )
 
-type TcpServiceOption func(service *TcpService)
+// TCPServiceOption TODO
+type TCPServiceOption func(service *TCPService)
+
+// SendAllFunc TODO
 type SendAllFunc func(table string, data []byte) bool
+
+// SendRawFunc TODO
 type SendRawFunc func(msg []byte)
+
+// OnConnectFunc TODO
 type OnConnectFunc func(conn *net.Conn)
+
+// CloseFunc TODO
 type CloseFunc func()
+
+// KeepaliveFunc TODO
 type KeepaliveFunc func(data []byte)
+
+// ReloadFunc TODO
 type ReloadFunc func()

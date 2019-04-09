@@ -9,8 +9,9 @@ import (
 	"github.com/mia0x75/copycat/g"
 )
 
-func NewControl(ctx *g.Context, opts ...ControlOption) *TcpService {
-	tcp := &TcpService{
+// NewControl TODO
+func NewControl(ctx *g.Context, opts ...Option) *TCPService {
+	tcp := &TCPService{
 		Address:  ctx.Config.Control.Listen,
 		lock:     new(sync.Mutex),
 		wg:       new(sync.WaitGroup),
@@ -24,25 +25,29 @@ func NewControl(ctx *g.Context, opts ...ControlOption) *TcpService {
 	return tcp
 }
 
-func ShowMember(f ShowMemberFunc) ControlOption {
-	return func(tcp *TcpService) {
+// ShowMember TODO
+func ShowMember(f ShowMemberFunc) Option {
+	return func(tcp *TCPService) {
 		tcp.showmember = f
 	}
 }
 
-func Reload(f ReloadFunc) ControlOption {
-	return func(tcp *TcpService) {
+// Reload TODO
+func Reload(f ReloadFunc) Option {
+	return func(tcp *TCPService) {
 		tcp.reload = f
 	}
 }
 
-func Stop(f StopFunc) ControlOption {
-	return func(tcp *TcpService) {
+// Stop TODO
+func Stop(f StopFunc) Option {
+	return func(tcp *TCPService) {
 		tcp.stop = f
 	}
 }
 
-func (tcp *TcpService) Start() {
+// Start TODO
+func (tcp *TCPService) Start() {
 	go func() {
 		listen, err := net.Listen("tcp", tcp.Address)
 		if err != nil {
@@ -67,7 +72,8 @@ func (tcp *TcpService) Start() {
 	}()
 }
 
-func (tcp *TcpService) Close() {
+// Close TODO
+func (tcp *TCPService) Close() {
 	log.Debugf("[D] tcp service closing, waiting for buffer send complete.")
 	tcp.lock.Lock()
 	defer tcp.lock.Unlock()

@@ -9,7 +9,7 @@ import (
 
 type codec struct{}
 
-func (c codec) Encode(msgId int64, msg []byte) []byte {
+func (c codec) Encode(msgID int64, msg []byte) []byte {
 	return msg
 }
 

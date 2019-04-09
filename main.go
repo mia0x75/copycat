@@ -105,8 +105,8 @@ func main() {
 		"Branch", g.Branch,
 	)
 
-	httpService := services.NewHttpService(ctx)
-	tcpService := services.NewTcpService(ctx)
+	httpService := services.NewHTTPService(ctx)
+	tcpService := services.NewTCPService(ctx)
 
 	// agent代理，用于实现集群
 	agentServer := agent.NewAgentServer(

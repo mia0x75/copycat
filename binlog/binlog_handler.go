@@ -161,7 +161,7 @@ func (h *Binlog) OnRow(e *canal.RowsEvent) error {
 			h.notify(rowData)
 		}
 	} else {
-		for i := 0; i < len(e.Rows); i += 1 {
+		for i := 0; i < len(e.Rows); i++ {
 			rowData["event_index"] = atomic.AddInt64(&h.EventIndex, int64(1))
 			rowsLen := len(e.Rows[i])
 			for k, col := range e.Table.Columns {
@@ -235,7 +235,7 @@ func (h *Binlog) OnPosSynced(p mysql.Position, b bool) error {
 	return nil
 }
 
-// use for agent sync pos callback
+// SaveBinlogPosition use for agent sync pos callback
 // 保存pos信息到cache
 // 这里的api对外提供，用于agent集群同步pos信息
 func (h *Binlog) SaveBinlogPosition(r []byte) {

@@ -4,15 +4,15 @@ func (c *Clients) append(node *ClientNode) {
 	*c = append(*c, node)
 }
 
-func (c *Clients) send(msgId int64, data []byte) {
+func (c *Clients) send(msgID int64, data []byte) {
 	for _, node := range *c {
-		node.Send(msgId, data)
+		node.Send(msgID, data)
 	}
 }
 
-func (c *Clients) asyncSend(msgId int64, data []byte) {
+func (c *Clients) asyncSend(msgID int64, data []byte) {
 	for _, node := range *c {
-		node.AsyncSend(msgId, data)
+		node.AsyncSend(msgID, data)
 	}
 }
 

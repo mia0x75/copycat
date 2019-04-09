@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"math"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -15,19 +16,19 @@ import (
 )
 
 var (
-	NotConnect   = errors.New("not connect")
-	IsConnected  = errors.New("is connected")
-	WaitTimeout  = errors.New("wait timeout")
-	ChanIsClosed = errors.New("wait is closed")
-	UnknownError = errors.New("unknown error")
+	errNotConnect   = errors.New("not connect")
+	errIsConnected  = errors.New("is connected")
+	errWaitTimeout  = errors.New("wait timeout")
+	errChanIsClosed = errors.New("wait is closed")
+	errUnknownError = errors.New("unknown error")
 )
 
 const (
 	statusConnect     = 1 << iota
-	MaxInt64          = int64(1) << 62
 	asyncWriteChanLen = 10000
 )
 
+// Client TODO
 type Client struct {
 	ctx                 context.Context
 	buffer              []byte
@@ -37,14 +38,14 @@ type Client struct {
 	onMessageCallback   []OnClientEventFunc
 	asyncWriteChan      chan []byte
 	coder               ICodec
-	msgId               int64
+	msgID               int64
 	waiter              map[int64]*waiter
 	waiterLock          *sync.RWMutex
 	waiterGlobalTimeout int64 //毫秒
 }
 
 type waiter struct {
-	msgId     int64
+	msgID     int64
 	data      chan []byte
 	time      int64
 	delWaiter func(int64)
@@ -55,22 +56,27 @@ func (w *waiter) Wait(timeout time.Duration) ([]byte, error) {
 	select {
 	case data, ok := <-w.data:
 		if !ok {
-			return nil, ChanIsClosed
+			return nil, errChanIsClosed
 		}
-		msgId := int64(binary.LittleEndian.Uint64(data[:8]))
-		w.delWaiter(msgId)
+		msgID := int64(binary.LittleEndian.Uint64(data[:8]))
+		w.delWaiter(msgID)
 		return data[8:], nil
 	case <-a:
-		return nil, WaitTimeout
+		return nil, errWaitTimeout
 	}
-	return nil, UnknownError
+	return nil, errUnknownError
 }
 
+// ClientOption TODO
 type ClientOption func(tcp *Client)
+
+// OnClientEventFunc TODO
 type OnClientEventFunc func(tcp *Client, content []byte)
+
+// OnConnectFunc TODO
 type OnConnectFunc func(tcp *Client)
 
-// 设置收到消息的回调函数
+// SetOnMessage 设置收到消息的回调函数
 // 回调函数同步执行，不能使阻塞的函数
 func SetOnMessage(f ...OnClientEventFunc) ClientOption {
 	return func(tcp *Client) {
@@ -78,21 +84,21 @@ func SetOnMessage(f ...OnClientEventFunc) ClientOption {
 	}
 }
 
-// 用来设置编码解码的接口
+// SetCoder 用来设置编码解码的接口
 func SetCoder(coder ICodec) ClientOption {
 	return func(tcp *Client) {
 		tcp.coder = coder
 	}
 }
 
-// 设置缓冲区大小
+// SetBufferSize 设置缓冲区大小
 func SetBufferSize(size int) ClientOption {
 	return func(tcp *Client) {
 		tcp.bufferSize = size
 	}
 }
 
-// 单位是毫秒
+// SetWaiterGlobalTimeout 单位是毫秒
 // 设置waiter检测的超时时间，默认为6000毫秒
 // 如果超过该时间，waiter就会被删除
 func SetWaiterGlobalTimeout(timeout int64) ClientOption {
@@ -101,6 +107,7 @@ func SetWaiterGlobalTimeout(timeout int64) ClientOption {
 	}
 }
 
+// NewClient TODO
 func NewClient(ctx context.Context, opts ...ClientOption) *Client {
 	c := &Client{
 		buffer:              make([]byte, 0),
@@ -111,7 +118,7 @@ func NewClient(ctx context.Context, opts ...ClientOption) *Client {
 		ctx:                 ctx,
 		coder:               &Codec{},
 		bufferSize:          4096,
-		msgId:               1,
+		msgID:               1,
 		waiter:              make(map[int64]*waiter),
 		waiterLock:          new(sync.RWMutex),
 		waiterGlobalTimeout: 6000,
@@ -124,59 +131,61 @@ func NewClient(ctx context.Context, opts ...ClientOption) *Client {
 	return c
 }
 
-func (tcp *Client) delWaiter(msgId int64) {
+func (tcp *Client) delWaiter(msgID int64) {
 	tcp.waiterLock.Lock()
-	w, ok := tcp.waiter[msgId]
+	w, ok := tcp.waiter[msgID]
 	if ok {
 		close(w.data)
-		delete(tcp.waiter, msgId)
+		delete(tcp.waiter, msgID)
 	}
 	tcp.waiterLock.Unlock()
 }
 
+// AsyncSend TODO
 func (tcp *Client) AsyncSend(data []byte) {
 	tcp.asyncWriteChan <- data
 }
 
+// Send TODO
 func (tcp *Client) Send(data []byte) (*waiter, int, error) {
 	if tcp.status&statusConnect <= 0 {
-		return nil, 0, NotConnect
+		return nil, 0, errNotConnect
 	}
-	msgId := atomic.AddInt64(&tcp.msgId, 1)
-	// check max msgId
-	if msgId > MaxInt64 {
-		atomic.StoreInt64(&tcp.msgId, 1)
-		msgId = atomic.AddInt64(&tcp.msgId, 1)
+	msgID := atomic.AddInt64(&tcp.msgID, 1)
+	// check max msgID
+	if msgID > math.MaxInt64 {
+		atomic.StoreInt64(&tcp.msgID, 1)
+		msgID = atomic.AddInt64(&tcp.msgID, 1)
 	}
 	wai := &waiter{
-		msgId:     msgId,
+		msgID:     msgID,
 		data:      make(chan []byte, 1),
 		time:      int64(time.Now().UnixNano() / 1000000),
 		delWaiter: tcp.delWaiter,
 	}
-	fmt.Println("add waiter ", wai.msgId)
+	fmt.Println("add waiter ", wai.msgID)
 	tcp.waiterLock.Lock()
-	tcp.waiter[wai.msgId] = wai
+	tcp.waiter[wai.msgID] = wai
 	tcp.waiterLock.Unlock()
 
-	sendMsg := tcp.coder.Encode(msgId, data)
+	sendMsg := tcp.coder.Encode(msgID, data)
 	num, err := tcp.conn.Write(sendMsg)
 	return wai, num, err
 }
 
-// write api 与 send api的差别在于 send 支持同步wait等待服务端响应
+// Write write api 与 send api的差别在于 send 支持同步wait等待服务端响应
 // write 则不支持
 func (tcp *Client) Write(data []byte) (int, error) {
 	if tcp.status&statusConnect <= 0 {
-		return 0, NotConnect
+		return 0, errNotConnect
 	}
-	msgId := atomic.AddInt64(&tcp.msgId, 1)
-	// check max msgId
-	if msgId > MaxInt64 {
-		atomic.StoreInt64(&tcp.msgId, 1)
-		msgId = atomic.AddInt64(&tcp.msgId, 1)
+	msgID := atomic.AddInt64(&tcp.msgID, 1)
+	// check max msgID
+	if msgID > math.MaxInt64 {
+		atomic.StoreInt64(&tcp.msgID, 1)
+		msgID = atomic.AddInt64(&tcp.msgID, 1)
 	}
-	sendMsg := tcp.coder.Encode(msgId, data)
+	sendMsg := tcp.coder.Encode(msgID, data)
 	num, err := tcp.conn.Write(sendMsg)
 	return num, err
 }
@@ -208,12 +217,12 @@ func (tcp *Client) keep() {
 	for {
 		current := int64(time.Now().UnixNano() / 1000000)
 		tcp.waiterLock.Lock()
-		for msgId, v := range tcp.waiter {
+		for msgID, v := range tcp.waiter {
 			// check timeout
 			if current-v.time >= tcp.waiterGlobalTimeout {
-				log.Warnf("[W] msgid %v is timeout, will delete", msgId)
+				log.Warnf("[W] msgid %v is timeout, will delete", msgID)
 				close(v.data)
-				delete(tcp.waiter, msgId)
+				delete(tcp.waiter, msgID)
 			}
 		}
 		tcp.waiterLock.Unlock()
@@ -243,11 +252,11 @@ func (tcp *Client) readMessage() {
 	}
 }
 
-// use like go tcp.Connect()
+// Connect use like go tcp.Connect()
 func (tcp *Client) Connect(address string, timeout time.Duration) error {
 	// 如果已经连接，直接返回
 	if tcp.status&statusConnect > 0 {
-		return IsConnected
+		return errIsConnected
 	}
 	dial := net.Dialer{Timeout: timeout}
 	conn, err := dial.Dial("tcp", address)
@@ -272,13 +281,13 @@ func (tcp *Client) onMessage(msg []byte) {
 	tcp.buffer = append(tcp.buffer, msg...)
 	for {
 		bufferLen := len(tcp.buffer)
-		msgId, content, pos, err := tcp.coder.Decode(tcp.buffer)
+		msgID, content, pos, err := tcp.coder.Decode(tcp.buffer)
 		if err != nil {
 			log.Errorf("[E] %v", err)
 			tcp.buffer = make([]byte, 0)
 			return
 		}
-		if msgId <= 0 {
+		if msgID <= 0 {
 			return
 		}
 		if len(tcp.buffer) >= pos {
@@ -288,12 +297,12 @@ func (tcp *Client) onMessage(msg []byte) {
 			log.Errorf("[E] pos %v (olen=%v) error, content=%v(%v) len is %v, data is: %+v", pos, bufferLen, content, string(content), len(tcp.buffer), tcp.buffer)
 		}
 		// 1 is system id
-		if msgId > 1 {
+		if msgID > 1 {
 			data := make([]byte, 8+len(content))
-			binary.LittleEndian.PutUint64(data[:8], uint64(msgId))
+			binary.LittleEndian.PutUint64(data[:8], uint64(msgID))
 			copy(data[8:], content)
 			tcp.waiterLock.RLock()
-			w, ok := tcp.waiter[msgId]
+			w, ok := tcp.waiter[msgID]
 			tcp.waiterLock.RUnlock()
 			if ok {
 				w.data <- data
@@ -309,6 +318,7 @@ func (tcp *Client) onMessage(msg []byte) {
 	}
 }
 
+// Disconnect TODO
 func (tcp *Client) Disconnect() {
 	if tcp.status&statusConnect <= 0 {
 		return

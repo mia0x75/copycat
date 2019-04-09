@@ -7,18 +7,25 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// WatchKv TODO
 type WatchKv struct {
 	kv     *api.KV
 	prefix string
 	notify []Notify
 }
 
+// Notify TODO
 type Notify func(kv *api.KV, key string, data interface{})
+
+// WatchKvOption TODO
 type WatchKvOption func(k *WatchKv)
+
+// IWatchKv TODO
 type IWatchKv interface {
 	Watch(watch func([]byte))
 }
 
+// NewWatchKv TODO
 func NewWatchKv(kv *api.KV, prefix string) IWatchKv {
 	k := &WatchKv{
 		prefix: prefix,
@@ -28,6 +35,7 @@ func NewWatchKv(kv *api.KV, prefix string) IWatchKv {
 	return k
 }
 
+// Watch TODO
 func (m *WatchKv) Watch(watch func([]byte)) {
 	go func() {
 		lastIndex := uint64(0)

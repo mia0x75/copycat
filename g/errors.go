@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	ErrorFileNotFound = errors.New("文件不存在")
-	ErrorFileParse    = errors.New("配置解析错误")
-	ErrorOutOfRange   = errors.New("out of range")
+	errFileNotFound = errors.New("文件不存在")
+	errFileParse    = errors.New("配置解析错误")
+	errOutOfRange   = errors.New("out of range")
 )

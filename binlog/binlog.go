@@ -12,8 +12,8 @@ import (
 	"github.com/mia0x75/copycat/services"
 )
 
-// 创建一个binlog服务对象
-func NewBinlog(ctx *g.Context, opts ...BinlogOption) *Binlog {
+// NewBinlog 创建一个binlog服务对象
+func NewBinlog(ctx *g.Context, opts ...Option) *Binlog {
 	binlog := &Binlog{
 		Config:           ctx.Config.Database,               //
 		wg:               new(sync.WaitGroup),               //
@@ -34,24 +34,24 @@ func NewBinlog(ctx *g.Context, opts ...BinlogOption) *Binlog {
 	return binlog
 }
 
-// set pos change callback
+// PosChange set pos change callback
 // if pos change, will call h.onPosChanges func
 // 设置binlog pos改变回调api
-func PosChange(f PosChangeFunc) BinlogOption {
+func PosChange(f PosChangeFunc) Option {
 	return func(h *Binlog) {
 		h.onPosChanges = append(h.onPosChanges, f)
 	}
 }
 
-// set on event callback
+// OnEvent set on event callback
 // 设置事件回调api
-func OnEvent(f OnEventFunc) BinlogOption {
+func OnEvent(f OnEventFunc) Option {
 	return func(h *Binlog) {
 		h.onEvent = append(h.onEvent, f)
 	}
 }
 
-// 关闭binlog服务
+// Close 关闭binlog服务
 func (h *Binlog) Close() {
 	h.statusLock.Lock()
 	if h.status&binlogIsExit > 0 {
@@ -179,7 +179,7 @@ func (h *Binlog) lookStopService() {
 	}
 }
 
-// 停止服务
+// StopService 停止服务
 // 参数exit为true时，会彻底退出服务
 // 这里只是发出了停止服务信号
 func (h *Binlog) StopService(exit bool) {
@@ -187,14 +187,14 @@ func (h *Binlog) StopService(exit bool) {
 	h.stopServiceChan <- exit
 }
 
-// 启动服务
+// StartService 启动服务
 // 这里只是发出了启动服务信号
 func (h *Binlog) StartService() {
 	log.Debugf("[D] ===========binlog service start was called===========")
 	h.startServiceChan <- struct{}{}
 }
 
-// 启动binlog
+// Start 启动binlog
 // 这里启动的是服务插件
 func (h *Binlog) Start() {
 	for _, service := range h.services {
@@ -203,7 +203,7 @@ func (h *Binlog) Start() {
 	}
 }
 
-// 选leader回调
+// OnLeader 选leader回调
 // binlog服务启动和停止由此控制
 func (h *Binlog) OnLeader(isLeader bool) {
 	if isLeader {
