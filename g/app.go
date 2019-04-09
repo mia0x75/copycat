@@ -6,18 +6,13 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"runtime"
-	"strings"
 	"time"
 
-	daemon "github.com/sevlyar/go-daemon"
 	log "github.com/sirupsen/logrus"
 	"github.com/toolkits/file"
 
 	"github.com/mia0x75/copycat/utils"
-	"github.com/mia0x75/copycat/utils/path"
 )
-
-var ctx *daemon.Context
 
 // Init app init
 // config path parse
@@ -65,25 +60,11 @@ func Init() {
 	runtime.GOMAXPROCS(runtime.NumCPU()) //指定cpu为多核运行 旧版本兼容
 }
 
-// Release TODO
-func Release() {
-	// delete pid when exit
-	file.Remove(PID_FILE)
-	if ctx != nil {
-		// release process context when exit
-		ctx.Release()
-	}
-}
-
 // Usage show usage
 func Usage() {
 	fmt.Println("copycat                                   : start service")
 	fmt.Println("copycat -h|-help                          : show this message")
 	fmt.Println("copycat -v|-version                       : show version info")
-	fmt.Println("copycat -stop                             : stop service")
-	fmt.Println("copycat -reload                           : reload")
-	fmt.Println("copycat -status                           : show status")
-	fmt.Println("copycat -d|-daemon                        : run as daemon process")
 }
 
 // GetKey get unique key, param if file path
@@ -104,35 +85,4 @@ func GetKey(sessionFile string) string {
 		return ""
 	}
 	return key
-}
-
-// DaemonProcess run as daemon process
-func DaemonProcess(d bool) bool {
-	if d {
-		exeFile := strings.Replace(os.Args[0], "\\", "/", -1)
-		fileName := exeFile
-		lastIndex := strings.LastIndex(exeFile, "/")
-		if lastIndex > -1 {
-			fileName = exeFile[lastIndex+1:]
-		}
-		cmd := []string{path.CurrentPath + "/" + fileName, " -daemon"}
-		ctx = &daemon.Context{
-			PidFileName: PID_FILE,
-			PidFilePerm: 0644,
-			LogFileName: LOG_FILE,
-			LogFilePerm: 0640,
-			WorkDir:     path.CurrentPath,
-			Umask:       027,
-			Args:        cmd,
-		}
-		d, err := ctx.Reborn()
-		if err != nil {
-			log.Fatal("[F] Unable to run: ", err)
-		}
-		if d != nil {
-			return true
-		}
-		return false
-	}
-	return false
 }

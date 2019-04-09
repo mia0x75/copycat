@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"os"
 
-	_ "github.com/go-sql-driver/mysql"
-
 	"github.com/mia0x75/copycat/agent"
 	"github.com/mia0x75/copycat/binlog"
 	"github.com/mia0x75/copycat/g"
@@ -21,7 +19,6 @@ var (
 	vCmd       = flag.Bool("v", false, "copycat version")                           //
 	helpCmd    = flag.Bool("help", false, "help")                                   //
 	hCmd       = flag.Bool("h", false, "help")                                      //
-	statusCmd  = flag.Bool("status", false, "show status")                          //
 	daemonCmd  = flag.Bool("daemon", false, "-daemon or -d, run as daemon process") //
 	dCmd       = flag.Bool("d", false, "-daemon or -d, run as daemon process")      //
 )
@@ -54,8 +51,6 @@ func main() {
 	g.ParseConfig("")
 	// app init
 	g.Init()
-	// clear some resource after exit
-	defer g.Release()
 	ctx := g.NewContext()
 
 	httpService := services.NewHTTPService(ctx)
@@ -67,15 +62,6 @@ func main() {
 		agent.OnEvent(tcpService.SendAll),
 		agent.OnRaw(tcpService.SendRaw),
 	)
-	if *statusCmd {
-		agentServer.ShowMembers()
-		os.Exit(0)
-	}
-
-	// return true is parent process
-	if g.DaemonProcess(*daemonCmd || *dCmd) {
-		return
-	}
 
 	// 核心binlog服务
 	blog := binlog.NewBinlog(
