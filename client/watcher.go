@@ -36,7 +36,7 @@ func newWatch(
 	conf := &consul.Config{Scheme: "http", Address: consulAddress}
 	cc, err := consul.NewClient(conf)
 	if err != nil {
-		log.Printf("%v", err)
+		log.Errorf("[E] %s", err.Error())
 	}
 	w := &ConsulWatcher{
 		cc:     cc,
@@ -145,7 +145,7 @@ func (cw *ConsulWatcher) getConnects(ip string, port int) uint64 {
 
 	k, _, err := cw.cc.KV().Get(key, nil)
 	if err != nil {
-		log.Errorf("[E] %v", err)
+		log.Errorf("[E] %s", err.Error())
 		return 0
 	}
 	return binary.LittleEndian.Uint64(k.Value)

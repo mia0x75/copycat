@@ -42,7 +42,7 @@ func (m *WatchKv) Watch(watch func([]byte)) {
 		for {
 			_, me, err := m.kv.List(m.prefix, nil)
 			if err != nil || me == nil {
-				log.Errorf("[E] %+v", err)
+				log.Errorf("[E] %s", err.Error())
 				time.Sleep(time.Second)
 				continue
 			}
@@ -51,9 +51,9 @@ func (m *WatchKv) Watch(watch func([]byte)) {
 		}
 		for {
 			qp := &api.QueryOptions{WaitIndex: lastIndex}
-			kp, me, e := m.kv.List(m.prefix, qp)
-			if e != nil {
-				log.Errorf("[E] %+v", e)
+			kp, me, err := m.kv.List(m.prefix, qp)
+			if err != nil {
+				log.Errorf("[E] %s", err.Error())
 				time.Sleep(time.Second)
 				continue
 			}

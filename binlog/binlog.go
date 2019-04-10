@@ -61,12 +61,12 @@ func (h *Binlog) Close() {
 	}
 	h.status |= binlogIsExit
 	h.statusLock.Unlock()
-	log.Warn("binlog service exit")
 	h.StopService(true)
 	for _, service := range h.services {
 		service.Close()
 	}
 	h.wg.Wait()
+	log.Info("[I] binlog service closed")
 }
 
 // for start and stop binlog service
@@ -155,9 +155,9 @@ func (h *Binlog) lookStopService() {
 			h.statusLock.Unlock()
 
 			if exit {
-				h.statusLock.Lock()
+				h.lock.Lock()
 				r := packPos(h.lastBinFile, int64(h.lastPos), atomic.LoadInt64(&h.EventIndex))
-				h.statusLock.Unlock()
+				h.lock.Unlock()
 				h.saveBinlogPositionCache(r)
 				h.statusLock.Lock()
 				if h.status&cacheHandlerIsOpened > 0 {
@@ -198,7 +198,6 @@ func (h *Binlog) StartService() {
 // 这里启动的是服务插件
 func (h *Binlog) Start() {
 	for _, service := range h.services {
-		log.Debugf("[D] try start service: %v", service.Name())
 		service.Start()
 	}
 }

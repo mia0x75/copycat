@@ -42,12 +42,12 @@ func (k *Kv) Set(key string, value []byte) error {
 // Get get key value
 // if key does not exists, return error:KvDoesNotExists
 func (k *Kv) Get(key string) ([]byte, error) {
-	kv, m, e := k.kv.Get(key, nil)
+	kv, m, err := k.kv.Get(key, nil)
 	log.Infof("[I] kv == %+v,", kv)
 	log.Infof("[I] m == %+v,", m)
-	if e != nil {
-		log.Errorf("[E] %+v", e)
-		return nil, e
+	if err != nil {
+		log.Errorf("[E] %+s", err.Error())
+		return nil, err
 	}
 	if kv == nil {
 		return nil, errKvDoesNotExists
@@ -57,9 +57,9 @@ func (k *Kv) Get(key string) ([]byte, error) {
 
 // Delete delete key value
 func (k *Kv) Delete(key string) error {
-	_, e := k.kv.Delete(key, nil)
-	if e != nil {
-		log.Errorf("[E] %+v", e)
+	_, err := k.kv.Delete(key, nil)
+	if err != nil {
+		log.Errorf("[E] %s", err.Error())
 	}
-	return e
+	return err
 }

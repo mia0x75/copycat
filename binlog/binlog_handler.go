@@ -228,8 +228,10 @@ func (h *Binlog) OnPosSynced(p mysql.Position, b bool) error {
 	pos := int64(p.Pos)
 	data := packPos(p.Name, pos, eventIndex)
 	h.saveBinlogPositionCache(data)
+	h.lock.Lock()
 	h.lastBinFile = p.Name
 	h.lastPos = p.Pos
+	h.lock.Unlock()
 	return nil
 }
 

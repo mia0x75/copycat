@@ -26,7 +26,7 @@ func Exists(dir string) bool {
 func GetCurrentPath() string {
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
-		log.Errorf("[E] %+v", err)
+		log.Errorf("[E] %s", err.Error())
 		return ""
 	}
 	return strings.Replace(dir, "\\", "/", -1)

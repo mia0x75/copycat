@@ -124,9 +124,6 @@ func NewClient(opts ...Option) *Client {
 
 			s := fmt.Sprintf("%v:%v", ip, port)
 			switch event {
-			//case EV_CHANGE:
-			//	log.Debugf("[D] service change(delete): %s", s)
-			//	delete(client.Services, s)
 			case EV_DELETE:
 				log.Debugf("[D] service delete: %s", s)
 				delete(client.Services, s)
@@ -146,7 +143,7 @@ func NewClient(opts ...Option) *Client {
 		}))
 		members, err := w.getMembers()
 		if err != nil {
-			log.Printf("%+v", err)
+			log.Errorf("[E] %s", err.Error())
 		}
 		client.lock.Lock()
 		for _, m := range members {
