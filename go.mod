@@ -22,12 +22,12 @@ replace (
 )
 
 require (
-	github.com/go-sql-driver/mysql v1.4.1
+	github.com/go-sql-driver/mysql v1.4.1 // indirect
+	github.com/gorilla/http v0.0.0-20180526232503-732371cf4733
 	github.com/hashicorp/consul/api v1.0.1
 	github.com/jmoiron/sqlx v1.2.0 // indirect
-	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
-	github.com/sevlyar/go-daemon v0.1.4
+	github.com/pingcap/check v0.0.0-20190102082844-67f458068fc8 // indirect
 	github.com/siddontang/go-mysql v0.0.0-20190312052122-c6ab05a85eb8
 	github.com/sirupsen/logrus v1.4.1
 	github.com/toolkits/file v0.0.0-20160325033739-a5b3c5147e07

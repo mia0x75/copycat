@@ -1,13 +1,15 @@
 package services
 
 import (
+	"bytes"
+	"io/ioutil"
 	"runtime"
 	"sync"
 
+	"github.com/gorilla/http"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/mia0x75/copycat/g"
-	"github.com/mia0x75/copycat/utils/http"
 )
 
 func newHTTPNode(ctx *g.Context, url string) *httpNode {
@@ -36,7 +38,20 @@ func (node *httpNode) wait() {
 }
 
 func (node *httpNode) send(data []byte) ([]byte, error) {
-	return http.Post(node.url, data)
+	var buf bytes.Buffer
+	buf.Write(data)
+	_, _, r, err := http.DefaultClient.Post(node.url, nil, &buf)
+	if err != nil {
+		return nil, err
+	}
+	if r != nil {
+		defer r.Close()
+	}
+	res, err := ioutil.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 func (nodes *httpNodes) asyncSend(data []byte) {
