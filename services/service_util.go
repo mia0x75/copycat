@@ -1,8 +1,9 @@
 package services
 
 import (
-	"errors"
 	"regexp"
+
+	"github.com/mia0x75/copycat/g"
 )
 
 // Pack TODO
@@ -20,14 +21,12 @@ func Pack(cmd int, msg []byte) []byte {
 	return r
 }
 
-var errDataLenError = errors.New("data len error")
-
 // Unpack TODO
 func Unpack(data []byte) (int, []byte, error) {
 	clen := int(data[0]) | int(data[1])<<8 |
 		int(data[2])<<16 | int(data[3])<<24
 	if len(data) < clen+4 {
-		return 0, nil, errDataLenError
+		return 0, nil, g.ErrDataLenError
 	}
 	cmd := int(data[4]) | int(data[5])<<8
 	content := data[6 : clen+4]

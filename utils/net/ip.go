@@ -1,12 +1,12 @@
 package net
 
 import (
-	"errors"
 	"net"
+
+	"github.com/mia0x75/copycat/g"
 )
 
-var errNetW = errors.New("network is not connect")
-
+// Local TODO
 func Local() (string, error) {
 	ifaces, err := net.Interfaces()
 	if err != nil {
@@ -41,5 +41,5 @@ func Local() (string, error) {
 			return ip.String(), nil
 		}
 	}
-	return "", errNetW
+	return "", g.ErrNetW
 }

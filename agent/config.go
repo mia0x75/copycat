@@ -16,5 +16,5 @@ const (
 // OnPosFunc 回调
 type OnPosFunc func(r []byte)
 
-// AgentServerOption 回调
-type AgentServerOption func(s *TCPService)
+// ServerOption 回调
+type ServerOption func(s *TCPService)

@@ -6,6 +6,8 @@ import (
 
 	"github.com/hashicorp/consul/api"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/mia0x75/copycat/g"
 )
 
 // Leader TODO
@@ -159,14 +161,14 @@ func (sev *Leader) Select(onLeader func(*ServiceMember)) {
 func (sev *Leader) Get() (*ServiceMember, error) {
 	members, _ := sev.GetServices(true)
 	if members == nil {
-		return nil, errMembersEmpty
+		return nil, g.ErrMembersEmpty
 	}
 	for _, v := range members {
 		if v.IsLeader {
 			return v, nil
 		}
 	}
-	return nil, errLeaderNotFound
+	return nil, g.ErrLeaderNotFound
 }
 
 // Free force free a leader

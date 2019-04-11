@@ -1,14 +1,10 @@
 package consul
 
 import (
-	"errors"
-
 	"github.com/hashicorp/consul/api"
 	log "github.com/sirupsen/logrus"
-)
 
-var (
-	errKvDoesNotExists = errors.New("kv does not exists")
+	"github.com/mia0x75/copycat/g"
 )
 
 // Kv TODO
@@ -50,7 +46,7 @@ func (k *Kv) Get(key string) ([]byte, error) {
 		return nil, err
 	}
 	if kv == nil {
-		return nil, errKvDoesNotExists
+		return nil, g.ErrKvDoesNotExists
 	}
 	return kv.Value, nil
 }

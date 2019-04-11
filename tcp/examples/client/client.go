@@ -44,8 +44,8 @@ func main() {
 		http.ListenAndServe("127.0.0.1:7773", nil)
 	}()
 
-	start := time.Now()
-	times := 1000000
+	// start := time.Now()
+	// times := 1000000
 	for {
 		data1 := []byte("hello")
 		data2 := []byte("word")
@@ -64,5 +64,7 @@ func main() {
 		fmt.Println("w2 return: ", string(res2))
 		fmt.Println("w3 return: ", string(res3))
 	}
-	fmt.Println("avg use time ", time.Since(start).Nanoseconds()/int64(times)/1000000, "ms")
+
+	// Unreachable code
+	// fmt.Println("avg use time ", time.Since(start).Nanoseconds()/int64(times)/1000000, "ms")
 }

@@ -67,7 +67,7 @@ type TCPService struct {
 }
 
 // NewAgentServer 创建实例
-func NewAgentServer(ctx *g.Context, opts ...AgentServerOption) *TCPService {
+func NewAgentServer(ctx *g.Context, opts ...ServerOption) *TCPService {
 	cfg := g.Config().Agent
 	if !cfg.Enabled {
 		s := &TCPService{
@@ -112,7 +112,7 @@ func NewAgentServer(ctx *g.Context, opts ...AgentServerOption) *TCPService {
 }
 
 // OnPos 设置收到pos的回调函数
-func OnPos(f OnPosFunc) AgentServerOption {
+func OnPos(f OnPosFunc) ServerOption {
 	return func(s *TCPService) {
 		if !s.enable {
 			return
@@ -122,7 +122,7 @@ func OnPos(f OnPosFunc) AgentServerOption {
 }
 
 // OnLeader TODO
-func OnLeader(f OnLeaderFunc) AgentServerOption {
+func OnLeader(f OnLeaderFunc) ServerOption {
 	return func(s *TCPService) {
 		if !s.enable {
 			f(true)
@@ -135,7 +135,7 @@ func OnLeader(f OnLeaderFunc) AgentServerOption {
 // OnEvent 事件回调
 // 这个回调应该来源于service_plugin/tcp
 // 最终被转发到SendAll
-func OnEvent(f OnEventFunc) AgentServerOption {
+func OnEvent(f OnEventFunc) ServerOption {
 	return func(s *TCPService) {
 		if !s.enable {
 			return
@@ -145,7 +145,7 @@ func OnEvent(f OnEventFunc) AgentServerOption {
 }
 
 // OnRaw 原封不动转发到tcp SendRaw
-func OnRaw(f OnRawFunc) AgentServerOption {
+func OnRaw(f OnRawFunc) ServerOption {
 	return func(s *TCPService) {
 		if !s.enable {
 			return
@@ -156,7 +156,7 @@ func OnRaw(f OnRawFunc) AgentServerOption {
 func (tcp *TCPService) onClientMessage(client *mtcp.Client, content []byte) {
 	cmd, data, err := services.Unpack(content)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("[E] %s", err.Error())
 		return
 	}
 	switch cmd {

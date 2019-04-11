@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/mia0x75/copycat/g"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -94,7 +95,7 @@ func NewSyncClient(ip string, port int, opts ...SyncClientOption) *SyncClient {
 // Send sync wait return
 func (tcp *SyncClient) Send(data []byte) ([]byte, error) {
 	if tcp.status&statusConnect <= 0 {
-		return nil, errNotConnect
+		return nil, g.ErrNotConnect
 	}
 	if tcp.writeTimeout > 0 {
 		tcp.conn.SetWriteDeadline(time.Now().Add(tcp.writeTimeout))
@@ -122,7 +123,7 @@ func (tcp *SyncClient) Send(data []byte) ([]byte, error) {
 // Connect use like go tcp.Connect()
 func (tcp *SyncClient) Connect() error {
 	if tcp.status&statusConnect > 0 {
-		return errIsConnected
+		return g.ErrIsConnected
 	}
 	d := net.Dialer{Timeout: tcp.connectTimeout}
 	conn, err := d.Dial("tcp", fmt.Sprintf("%s:%d", tcp.ip, tcp.port))

@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	_ "net/http/pprof"
 	"os"
-	"runtime"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -56,8 +55,6 @@ func Init() {
 	}()
 	// set timezone
 	time.LoadLocation(Config().TimeZone)
-	// set cpu num
-	runtime.GOMAXPROCS(runtime.NumCPU()) //指定cpu为多核运行 旧版本兼容
 }
 
 // Usage show usage

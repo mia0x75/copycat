@@ -3,9 +3,10 @@ package tcp
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 
 	"github.com/sirupsen/logrus"
+
+	"github.com/mia0x75/copycat/g"
 )
 
 const (
@@ -15,12 +16,6 @@ const (
 	PackageMinLength = 16
 	// ContentMinLen TODO
 	ContentMinLen = 8
-)
-
-var (
-	errMaxPackError   = errors.New("package len max then limit")
-	errDataLenError   = errors.New("data len error")
-	errInvalidPackage = errors.New("invalid package")
 )
 
 var (
@@ -70,20 +65,20 @@ func (c Codec) Decode(data []byte) (int64, []byte, int, error) {
 		i := bytes.Index(data, PackageHeader)
 		if i < 0 {
 			// 没有找到header，说明这个包为非法包，可以丢弃
-			return 0, nil, 0, errInvalidPackage
+			return 0, nil, 0, g.ErrInvalidPackage
 		}
 		startPos = i + 4
 	}
 	if len(data) > PackageMaxLength {
 		logrus.Infof("max len error")
-		return 0, nil, 0, errMaxPackError
+		return 0, nil, 0, g.ErrMaxPackError
 	}
 	if len(data) < PackageMinLength {
 		return 0, nil, 0, nil
 	}
 	clen := int(binary.LittleEndian.Uint32(data[startPos : startPos+4]))
 	if clen < ContentMinLen {
-		return 0, nil, 0, errDataLenError
+		return 0, nil, 0, g.ErrDataLenError
 	}
 	if len(data) < clen+8 {
 		return 0, nil, 0, nil

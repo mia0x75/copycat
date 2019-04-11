@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"math"
 	"net"
@@ -13,14 +12,8 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-)
 
-var (
-	errNotConnect   = errors.New("not connect")
-	errIsConnected  = errors.New("is connected")
-	errWaitTimeout  = errors.New("wait timeout")
-	errChanIsClosed = errors.New("wait is closed")
-	errUnknownError = errors.New("unknown error")
+	"github.com/mia0x75/copycat/g"
 )
 
 const (
@@ -39,32 +32,35 @@ type Client struct {
 	asyncWriteChan      chan []byte
 	coder               ICodec
 	msgID               int64
-	waiter              map[int64]*waiter
+	waiter              map[int64]*Waiter
 	waiterLock          *sync.RWMutex
 	waiterGlobalTimeout int64 //毫秒
 }
 
-type waiter struct {
+// Waiter TODO
+type Waiter struct {
 	msgID     int64
 	data      chan []byte
 	time      int64
 	delWaiter func(int64)
 }
 
-func (w *waiter) Wait(timeout time.Duration) ([]byte, error) {
+// Wait TODO
+func (w *Waiter) Wait(timeout time.Duration) ([]byte, error) {
 	a := time.After(timeout)
 	select {
 	case data, ok := <-w.data:
 		if !ok {
-			return nil, errChanIsClosed
+			return nil, g.ErrChanIsClosed
 		}
 		msgID := int64(binary.LittleEndian.Uint64(data[:8]))
 		w.delWaiter(msgID)
 		return data[8:], nil
 	case <-a:
-		return nil, errWaitTimeout
+		return nil, g.ErrWaitTimeout
 	}
-	return nil, errUnknownError
+	// Unreachable code
+	// return nil, g.ErrUnknownError
 }
 
 // ClientOption TODO
@@ -119,7 +115,7 @@ func NewClient(ctx context.Context, opts ...ClientOption) *Client {
 		coder:               &Codec{},
 		bufferSize:          4096,
 		msgID:               1,
-		waiter:              make(map[int64]*waiter),
+		waiter:              make(map[int64]*Waiter),
 		waiterLock:          new(sync.RWMutex),
 		waiterGlobalTimeout: 6000,
 	}
@@ -147,9 +143,9 @@ func (tcp *Client) AsyncSend(data []byte) {
 }
 
 // Send TODO
-func (tcp *Client) Send(data []byte) (*waiter, int, error) {
+func (tcp *Client) Send(data []byte) (*Waiter, int, error) {
 	if tcp.status&statusConnect <= 0 {
-		return nil, 0, errNotConnect
+		return nil, 0, g.ErrNotConnect
 	}
 	msgID := atomic.AddInt64(&tcp.msgID, 1)
 	// check max msgID
@@ -157,7 +153,7 @@ func (tcp *Client) Send(data []byte) (*waiter, int, error) {
 		atomic.StoreInt64(&tcp.msgID, 1)
 		msgID = atomic.AddInt64(&tcp.msgID, 1)
 	}
-	wai := &waiter{
+	wai := &Waiter{
 		msgID:     msgID,
 		data:      make(chan []byte, 1),
 		time:      int64(time.Now().UnixNano() / 1000000),
@@ -177,7 +173,7 @@ func (tcp *Client) Send(data []byte) (*waiter, int, error) {
 // write 则不支持
 func (tcp *Client) Write(data []byte) (int, error) {
 	if tcp.status&statusConnect <= 0 {
-		return 0, errNotConnect
+		return 0, g.ErrNotConnect
 	}
 	msgID := atomic.AddInt64(&tcp.msgID, 1)
 	// check max msgID
@@ -256,7 +252,7 @@ func (tcp *Client) readMessage() {
 func (tcp *Client) Connect(address string, timeout time.Duration) error {
 	// 如果已经连接，直接返回
 	if tcp.status&statusConnect > 0 {
-		return errIsConnected
+		return g.ErrIsConnected
 	}
 	dial := net.Dialer{Timeout: timeout}
 	conn, err := dial.Dial("tcp", address)

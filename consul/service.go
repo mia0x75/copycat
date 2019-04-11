@@ -1,12 +1,13 @@
 package consul
 
 import (
-	"errors"
 	"fmt"
 	"sync"
 
 	"github.com/hashicorp/consul/api"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/mia0x75/copycat/g"
 )
 
 // 服务注册
@@ -16,12 +17,6 @@ const (
 const (
 	statusOnline  = "online"
 	statusOffline = "offline"
-)
-
-var (
-	errMembersEmpty   = errors.New("members is empty")
-	errLeaderNotFound = errors.New("leader not found")
-	errNotRegister    = errors.New("service not register")
 )
 
 // ServiceMember TODO
@@ -141,7 +136,7 @@ func (sev *Service) Register() error {
 // UpdateTTL TODO
 func (sev *Service) UpdateTTL() error {
 	if sev.status&Registered <= 0 {
-		return errNotRegister
+		return g.ErrNotRegister
 	}
 	return sev.agent.UpdateTTL(sev.ServiceID, fmt.Sprintf("isleader:%v", sev.leader), "passing")
 }
