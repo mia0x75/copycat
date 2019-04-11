@@ -1,4 +1,4 @@
-package tcp
+package agent
 
 func (c *Clients) append(node *ClientNode) {
 	*c = append(*c, node)

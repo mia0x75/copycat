@@ -10,7 +10,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/mia0x75/copycat/tcp"
+	"github.com/mia0x75/copycat/agent"
 )
 
 func main() {
@@ -19,7 +19,7 @@ func main() {
 	// 在运行client端
 	// go run client
 	address := "127.0.0.1:7771"
-	client := tcp.NewClient(context.Background())
+	client := agent.NewClient(context.Background())
 	err := client.Connect(address, time.Second*3)
 
 	if err != nil {

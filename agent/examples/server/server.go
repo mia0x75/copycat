@@ -7,8 +7,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-
-	"github.com/mia0x75/copycat/tcp"
 )
 
 func main() {
