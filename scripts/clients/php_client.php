@@ -8,7 +8,7 @@ const CMD_TICK    = 5;
 const CMD_EVENT   = 6;
 
 const SERVER_ADDR = '127.0.0.1';
-const SERVER_PORT = 9998;
+const SERVER_PORT = 9990;
 
 date_default_timezone_set('Asia/Shanghai');
 

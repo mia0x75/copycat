@@ -39,19 +39,19 @@ func (h *Binlog) handlerInit() {
 	}
 	log.Debugf("[D] master pos: %+v", currentPos)
 	if f != "" && p > 0 {
-		h.Config.BinlogFile = f
-		h.Config.BinlogPos = uint32(p)
-		if f == currentPos.Name && h.Config.BinlogPos > currentPos.Pos {
+		h.ctx.Config.Database.BinlogFile = f
+		h.ctx.Config.Database.BinlogPos = uint32(p)
+		if f == currentPos.Name && h.ctx.Config.Database.BinlogPos > currentPos.Pos {
 			//pos set error, auto start form current pos
-			h.Config.BinlogPos = currentPos.Pos
-			log.Warnf("[W] pos set error, auto start form: %d", h.Config.BinlogPos)
+			h.ctx.Config.Database.BinlogPos = currentPos.Pos
+			log.Warnf("[W] pos set error, auto start form: %d", h.ctx.Config.Database.BinlogPos)
 		}
 	} else {
-		h.Config.BinlogFile = currentPos.Name
-		h.Config.BinlogPos = currentPos.Pos
+		h.ctx.Config.Database.BinlogFile = currentPos.Name
+		h.ctx.Config.Database.BinlogPos = currentPos.Pos
 	}
-	h.lastBinFile = h.Config.BinlogFile
-	h.lastPos = uint32(h.Config.BinlogPos)
+	h.lastBinFile = h.ctx.Config.Database.BinlogFile
+	h.lastPos = uint32(h.ctx.Config.Database.BinlogPos)
 	log.Debugf("[D] current pos: (%+v, %+v)", h.lastBinFile, h.lastPos)
 }
 
@@ -78,7 +78,7 @@ func (h *Binlog) setHandler() {
 }
 
 // RegisterService 注册服务
-func (h *Binlog) RegisterService(s services.Service) {
+func (h *Binlog) RegisterService(s services.IService) {
 	h.lock.Lock()
 	h.services[s.Name()] = s
 	h.lock.Unlock()
@@ -104,6 +104,7 @@ func (h *Binlog) notify(data map[string]interface{}) {
 
 // OnRow 数据改变事件回调
 func (h *Binlog) OnRow(e *canal.RowsEvent) error {
+	log.Debug("[D] OnRow fired")
 	h.statusLock.Lock()
 	if h.status&binlogIsExit > 0 {
 		h.statusLock.Unlock()

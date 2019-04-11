@@ -4,53 +4,71 @@ import (
 	"net"
 	"sync"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/mia0x75/copycat/g"
 )
 
 type tcpGroups struct {
-	g    map[string]*tcpGroup
-	lock *sync.Mutex
-	ctx  *g.Context
+	g        []*tcpClientNode
+	lock     *sync.Mutex
+	ctx      *g.Context
+	unique   int64
+	onRemove []OnRemoveFunc
 }
 
-func newGroups(ctx *g.Context) *tcpGroups {
+// OnRemoveFunc TODO
+type OnRemoveFunc func(conn *net.Conn)
+
+// TCPGroupsOptions TODO
+type TCPGroupsOptions func(groups *tcpGroups)
+
+func newGroups(ctx *g.Context, opts ...TCPGroupsOptions) *tcpGroups {
 	g := &tcpGroups{
-		lock: new(sync.Mutex),
-		g:    make(map[string]*tcpGroup),
-		ctx:  ctx,
+		unique:   0,
+		lock:     new(sync.Mutex),
+		g:        make([]*tcpClientNode, 0),
+		ctx:      ctx,
+		onRemove: make([]OnRemoveFunc, 0),
 	}
-	for _, group := range ctx.Config.TCP.Groups {
-		tcpGroup := newTCPGroup(group)
-		g.add(tcpGroup)
+	for _, f := range opts {
+		f(g)
 	}
 	return g
 }
 
-func (groups *tcpGroups) reload() {
-	groups.close()
-	for _, group := range groups.ctx.Config.TCP.Groups {
-		tcpGroup := newTCPGroup(group)
-		groups.add(tcpGroup)
+// SetOnRemove TODO
+func SetOnRemove(f OnRemoveFunc) TCPGroupsOptions {
+	return func(groups *tcpGroups) {
+		groups.onRemove = append(groups.onRemove, f)
 	}
 }
 
-func (groups *tcpGroups) add(group *tcpGroup) {
-	groups.lock.Lock()
-	defer groups.lock.Unlock()
-	groups.g[group.name] = group
+func (groups *tcpGroups) sendAll(table string, data []byte) bool {
+	for _, node := range groups.g {
+		log.Debugf("[D] topics:%+v, %v", node.topics, table)
+		// 如果有订阅主题
+		if MatchFilters(node.topics, table) {
+			node.asyncSend(data)
+		}
+	}
+	return true
 }
 
-func (groups *tcpGroups) delete(group *tcpGroup) {
-	groups.lock.Lock()
-	defer groups.lock.Unlock()
-	delete(groups.g, group.name)
+func (groups *tcpGroups) remove(node *tcpClientNode) {
+	for index, n := range groups.g {
+		if n == node {
+			groups.g = append(groups.g[:index], groups.g[index+1:]...)
+			break
+		}
+	}
+	for _, f := range groups.onRemove {
+		f(node.conn)
+	}
 }
 
-func (groups *tcpGroups) hasName(findName string) bool {
-	groups.lock.Lock()
-	defer groups.lock.Unlock()
-	_, ok := groups.g[findName]
-	return ok
+func (groups *tcpGroups) reload() {
+	groups.close()
 }
 
 func (groups *tcpGroups) asyncSend(data []byte) {
@@ -62,43 +80,16 @@ func (groups *tcpGroups) asyncSend(data []byte) {
 }
 
 func (groups *tcpGroups) close() {
-	groups.lock.Lock()
-	defer groups.lock.Unlock()
-	for key, group := range groups.g {
-		group.close()
-		delete(groups.g, key)
-	}
-}
-
-func (groups *tcpGroups) removeNode(node *tcpClientNode) {
-	groups.lock.Lock()
-	defer groups.lock.Unlock()
-	if group, found := groups.g[node.group]; found {
-		group.remove(node)
-	}
-}
-
-func (groups *tcpGroups) addNode(node *tcpClientNode, groupName string) bool {
-	groups.lock.Lock()
-	group, found := groups.g[groupName]
-	groups.lock.Unlock()
-	if !found || groupName == "" {
-		return false
-	}
-	group.append(node)
-	return true
-}
-
-func (groups *tcpGroups) sendAll(table string, data []byte) bool {
 	for _, group := range groups.g {
-		if group.match(table) {
-			group.asyncSend(data)
-		}
+		group.close()
 	}
-	return true
+	groups.g = make([]*tcpClientNode, 0)
 }
 
 func (groups *tcpGroups) onConnect(conn *net.Conn) {
-	node := newNode(groups.ctx, conn, NodeClose(groups.removeNode), NodePro(groups.addNode))
+	groups.lock.Lock()
+	node := newNode(groups.ctx, conn, NodeClose(groups.remove))
+	groups.g = append(groups.g, node)
+	groups.lock.Unlock()
 	go node.onConnect()
 }

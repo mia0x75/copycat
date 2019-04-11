@@ -16,9 +16,10 @@ type LogConfig struct {
 	Level string `json:"level"` //
 }
 
-// ControlConfig 控制配置
-type ControlConfig struct {
-	Listen string `json:"listen"`
+// AdminConfig Web配置
+type AdminConfig struct {
+	Enabled bool   `json:"enabled"`
+	Listen  string `json:"listen"`
 }
 
 // DatabaseConfig 数据库链接及日志信息配置
@@ -44,43 +45,20 @@ type AgentConfig struct {
 	Consul  string `json:"consul"`  //
 }
 
-// HTTPGroupConfig 分组配置
-type HTTPGroupConfig struct {
-	Name      string   `json:"name"`   // 分组名称
-	Filter    []string `json:"filter"` // 过滤条件
-	Endpoints []string `json:"endpoints"`
-}
-
-// TCPGroupConfig 分组配置
-type TCPGroupConfig struct {
-	Name   string   `json:"name"`   // 分组名称
-	Filter []string `json:"filter"` // 过滤条件
-}
-
-// HTTPConfig HTTP配置
-type HTTPConfig struct {
-	Enabled  bool               `json:"enabled"`   //
-	TimeTick uint32             `json:"time_tick"` //
-	Groups   []*HTTPGroupConfig `json:"groups"`    //
-}
-
-// TCPConfig TCP配置
-type TCPConfig struct {
-	Enabled   bool              `json:"enabled"`    //
-	Addr      string            `json:"addr"`       //
-	Port      uint16            `json:"port"`       //
-	ServiceIP string            `json:"service_ip"` //
-	Groups    []*TCPGroupConfig `json:"groups"`     //
+// ConsulConfig Consul配置
+type ConsulConfig struct {
+	Enabled bool   `json:"enabled"`
+	Addr    string `json:"addr"`
 }
 
 // GlobalConfig 系统配置
 type GlobalConfig struct {
 	Log      *LogConfig      `json:"log"`       //
-	Control  *ControlConfig  `json:"control"`   //
+	Admin    *AdminConfig    `json:"admin"`     //
 	TimeZone string          `json:"time_zone"` //
 	Database *DatabaseConfig `json:"database"`  //
-	HTTP     *HTTPConfig     `json:"http"`      //
-	TCP      *TCPConfig      `json:"tcp"`       //
+	Listen   string          `json:"listen"`    //
+	Consul   *ConsulConfig   `json:"consul"`    //
 	Agent    *AgentConfig    `json:"agent"`     //
 }
 
@@ -140,10 +118,6 @@ func ParseConfig(cfg string) *GlobalConfig {
 	err = json.Unmarshal([]byte(content), &c)
 	if err != nil {
 		log.Fatalf("[F] 解析配置文件 \"%s\" 错误: %s", ConfigFile, err.Error())
-	}
-
-	if c.HTTP.TimeTick <= 0 {
-		c.HTTP.TimeTick = 1
 	}
 
 	configLock.Lock()

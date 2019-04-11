@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -21,16 +22,16 @@ func newNode(ctx *g.Context, conn *net.Conn, opts ...NodeOption) *tcpClientNode 
 		connectTime:      time.Now().Unix(),
 		recvBuf:          make([]byte, 0),
 		status:           tcpNodeOnline,
-		group:            "",
+		topics:           make([]string, 0),
 		ctx:              ctx,
 		lock:             new(sync.Mutex),
 		onclose:          make([]NodeFunc, 0),
 		wg:               new(sync.WaitGroup),
 	}
-	node.setReadDeadline(time.Now().Add(time.Second * 3))
 	for _, f := range opts {
 		f(node)
 	}
+	go node.asyncSendService()
 	return node
 }
 
@@ -41,15 +42,15 @@ func NodeClose(f NodeFunc) NodeOption {
 	}
 }
 
-// NodePro TODO
-func NodePro(f SetProFunc) NodeOption {
-	return func(n *tcpClientNode) {
-		n.onpro = f
+func (node *tcpClientNode) addTopic(topic string) {
+	topic = strings.Trim(topic, " ")
+	topic = strings.ToLower(topic)
+	for _, v := range node.topics {
+		if v == topic {
+			return
+		}
 	}
-}
-
-func (node *tcpClientNode) setGroup(group string) {
-	node.group = group
+	node.topics = append(node.topics, topic)
 }
 
 func (node *tcpClientNode) close() {
@@ -63,6 +64,7 @@ func (node *tcpClientNode) close() {
 		(*node.conn).Close()
 		close(node.sendQueue)
 	}
+
 	for _, f := range node.onclose {
 		f(node)
 	}
@@ -145,10 +147,6 @@ func (node *tcpClientNode) onMessage(msg []byte) {
 }
 
 func (node *tcpClientNode) onSetProEvent(data []byte) {
-	// 客户端角色分为三种
-	// 一种是普通的客户端
-	// 一种是用来控制进程的客户端
-	// 还有另外一种就是agent代理客户端
 	flag := data[0]
 	content := string(data[1:])
 	switch flag {
@@ -164,15 +162,9 @@ func (node *tcpClientNode) onSetProEvent(data []byte) {
 }
 
 func (node *tcpClientNode) onSetPro(groupName string) {
-	if !node.onpro(node, groupName) {
-		node.send(Pack(CMD_ERROR, []byte(fmt.Sprintf("tcp service, group does not exists: %s", groupName))))
-		node.close()
-		return
-	}
-	node.setReadDeadline(time.Time{})
+	log.Debugf("[D] add topic: %v", groupName)
 	node.send(packDataSetPro)
-	node.setGroup(groupName)
-	go node.asyncSendService()
+	node.addTopic(groupName)
 }
 
 func (node *tcpClientNode) asyncSendService() {
@@ -194,6 +186,7 @@ func (node *tcpClientNode) asyncSendService() {
 			if err != nil {
 				atomic.AddInt64(&node.sendFailureTimes, int64(1))
 				log.Errorf("[E] tcp send to %s error: %v", (*node.conn).RemoteAddr().String(), err)
+				//tcp.onClose(node)
 				node.close()
 				return
 			}

@@ -24,7 +24,6 @@ replace (
 
 require (
 	github.com/go-sql-driver/mysql v1.4.1 // indirect
-	github.com/gorilla/http v0.0.0-20180526232503-732371cf4733
 	github.com/hashicorp/consul/api v1.0.1
 	github.com/jmoiron/sqlx v1.2.0 // indirect
 	github.com/kr/pretty v0.1.0 // indirect

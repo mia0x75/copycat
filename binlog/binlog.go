@@ -15,16 +15,15 @@ import (
 // NewBinlog 创建一个binlog服务对象
 func NewBinlog(ctx *g.Context, opts ...Option) *Binlog {
 	binlog := &Binlog{
-		Config:           ctx.Config.Database,               //
-		wg:               new(sync.WaitGroup),               //
-		lock:             new(sync.Mutex),                   //
-		statusLock:       new(sync.Mutex),                   //
-		ctx:              ctx,                               //
-		services:         make(map[string]services.Service), //
-		startServiceChan: make(chan struct{}, 100),          //
-		stopServiceChan:  make(chan bool, 100),              //
-		status:           0,                                 //
-		onPosChanges:     make([]PosChangeFunc, 0),          //
+		wg:               new(sync.WaitGroup),                //
+		lock:             new(sync.Mutex),                    //
+		statusLock:       new(sync.Mutex),                    //
+		ctx:              ctx,                                //
+		services:         make(map[string]services.IService), //
+		startServiceChan: make(chan struct{}, 100),           //
+		stopServiceChan:  make(chan bool, 100),               //
+		status:           0,                                  //
+		onPosChanges:     make([]PosChangeFunc, 0),           //
 	}
 	for _, f := range opts {
 		f(binlog)
@@ -110,7 +109,7 @@ func (h *Binlog) lookStartService() {
 					}
 					for {
 						if h.handler == nil {
-							log.Warn("binlog handler is nil, wait for init")
+							log.Warn("[W] binlog handler is nil, wait for init")
 							time.Sleep(time.Second)
 							continue
 						}

@@ -3,13 +3,12 @@ package services
 import (
 	"net"
 	"sync"
-	"time"
 
 	"github.com/mia0x75/copycat/g"
 )
 
-// Service 服务接口
-type Service interface {
+// IService 服务接口
+type IService interface {
 	SendAll(table string, data []byte) bool // 服务广播
 	Start()                                 // 启动服务
 	Close()                                 // 关闭服务
@@ -48,50 +47,25 @@ const (
 	serviceClosed
 )
 
-type httpGroup struct {
-	name   string    //
-	filter []string  //
-	nodes  httpNodes //
-}
-
-type httpNodes []*httpNode
-type httpGroups map[string]*httpGroup
-
-// HTTPService TODO
-type HTTPService struct {
-	Service                //
-	groups   httpGroups    //
-	lock     *sync.Mutex   // 互斥锁，修改资源时锁定
-	timeTick time.Duration // 故障检测的时间间隔
-	ctx      *g.Context    // *context.Context
-	status   int           //
-}
-
-type httpNode struct {
-	url       string      // url
-	sendQueue chan string // 发送channel
-	lock      *sync.Mutex // 互斥锁，修改资源时锁定
-	ctx       *g.Context
-	wg        *sync.WaitGroup
-}
-
 const (
 	tcpNodeOnline = 1 << iota
 )
+
+// ServiceName TODO
+const ServiceName = "binlog-go-subscribe"
 
 type tcpClientNode struct {
 	conn             *net.Conn       // 客户端连接进来的资源句柄
 	sendQueue        chan []byte     // 发送channel
 	sendFailureTimes int64           // 发送失败次数
-	group            string          // 所属分组
+	topics           []string        // 订阅的主题
 	recvBuf          []byte          // 读缓冲区
 	connectTime      int64           // 连接成功的时间戳
 	status           int             //
 	wg               *sync.WaitGroup //
 	ctx              *g.Context      //
 	lock             *sync.Mutex     // 互斥锁，修改资源时锁定
-	onclose          []NodeFunc
-	onpro            SetProFunc
+	onclose          []NodeFunc      //
 }
 
 // NodeFunc TODO
@@ -112,17 +86,14 @@ type tcpGroup struct {
 
 // TCPService TODO
 type TCPService struct {
-	Service
-	IP          string      // 监听ip
-	Port        uint16      // 监听端口
-	lock        *sync.Mutex // 互斥锁，修改资源时锁定
+	IService
+	Listen      string // 监听ip
+	lock        *sync.Mutex
 	statusLock  *sync.Mutex
-	ctx         *g.Context      // *context.Context
-	listener    *net.Listener   //
-	wg          *sync.WaitGroup //
-	ServiceIP   string
+	ctx         *g.Context
+	listener    *net.Listener
+	wg          *sync.WaitGroup
 	status      int
-	token       string
 	conn        *net.TCPConn
 	buffer      []byte
 	sendAll     []SendAllFunc
@@ -134,8 +105,7 @@ type TCPService struct {
 }
 
 var (
-	_ Service = &TCPService{}
-	_ Service = &HTTPService{}
+	_ IService = &TCPService{}
 
 	packDataTickOk = Pack(CMD_TICK, []byte("ok"))
 	packDataSetPro = Pack(CMD_SET_PRO, []byte("ok"))

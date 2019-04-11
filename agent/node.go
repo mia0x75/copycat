@@ -168,6 +168,7 @@ func (node *ClientNode) readMessage() {
 		readBuffer := make([]byte, 4096)
 		size, err := (*node.conn).Read(readBuffer)
 		if err != nil && err != io.EOF {
+			// TODO:
 			log.Warnf("[W] tcp node disconnect with error: %v, %v", (*node.conn).RemoteAddr().String(), err)
 			node.close()
 			return

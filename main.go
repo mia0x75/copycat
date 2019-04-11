@@ -53,7 +53,6 @@ func main() {
 	g.Init()
 	ctx := g.NewContext()
 
-	httpService := services.NewHTTPService(ctx)
 	tcpService := services.NewTCPService(ctx)
 
 	// agent代理，用于实现集群
@@ -79,7 +78,6 @@ func main() {
 	)
 
 	// 注册服务
-	blog.RegisterService(httpService)
 	blog.RegisterService(tcpService)
 	// 开始binlog进程
 	blog.Start()
@@ -96,20 +94,22 @@ func main() {
 	agentServer.Start()
 	defer agentServer.Close()
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		io.WriteString(w, agentServer.ShowMembers())
-	})
-	mux.HandleFunc("/reload", func(w http.ResponseWriter, r *http.Request) {
-		io.WriteString(w, "reload")
-	})
-	mux.HandleFunc("/stop", func(w http.ResponseWriter, r *http.Request) {
-		io.WriteString(w, "stop")
-	})
-	mux.HandleFunc("/start", func(w http.ResponseWriter, r *http.Request) {
-		io.WriteString(w, "start")
-	})
-	go http.ListenAndServe(g.Config().Control.Listen, mux)
+	if g.Config().Admin.Enabled {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+			io.WriteString(w, agentServer.ShowMembers())
+		})
+		mux.HandleFunc("/reload", func(w http.ResponseWriter, r *http.Request) {
+			io.WriteString(w, "reload")
+		})
+		mux.HandleFunc("/stop", func(w http.ResponseWriter, r *http.Request) {
+			io.WriteString(w, "stop")
+		})
+		mux.HandleFunc("/start", func(w http.ResponseWriter, r *http.Request) {
+			io.WriteString(w, "start")
+		})
+		go http.ListenAndServe(g.Config().Admin.Listen, mux)
+	}
 
 	// wait exit
 	select {
