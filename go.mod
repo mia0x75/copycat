@@ -2,6 +2,7 @@ module github.com/mia0x75/copycat
 
 replace (
 	cloud.google.com/go => github.com/googleapis/google-cloud-go v0.36.0
+	github.com/siddontang/go-mysql => github.com/mia0x75/go-mysql v0.0.0-20190411053611-e23f6fe57410
 
 	golang.org/x/build => github.com/golang/build v0.0.0-20190228010158-44b79b8774a7
 	golang.org/x/crypto => github.com/golang/crypto v0.0.0-20190227175134-215aa809caaf

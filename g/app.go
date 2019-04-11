@@ -34,6 +34,7 @@ func Init() {
 	if level, err := log.ParseLevel(Config().Log.Level); err == nil {
 		log.SetLevel(level)
 	}
+	// log.SetOutput(ioutil.Discard)
 	// run pprof
 	go func() {
 		//http://localhost:6060/debug/pprof/  内存性能分析工具

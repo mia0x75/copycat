@@ -66,7 +66,7 @@ func (h *Binlog) setHandler() {
 	cfg.Flavor = g.Config().Database.Flavor
 	cfg.HeartbeatPeriod = time.Duration(g.Config().Database.HeartbeatPeriod)
 	cfg.ReadTimeout = time.Duration(g.Config().Database.ReadTimeout)
-
+	cfg.Silence = true // 禁止打印日志
 	handler, err := canal.NewCanal(cfg)
 	if err != nil {
 		log.Panicf("[P] new canal with error：%+v", err)
