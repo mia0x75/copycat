@@ -3,14 +3,13 @@ package g
 import (
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	_ "net/http/pprof"
 	"os"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/toolkits/file"
-
-	"github.com/mia0x75/copycat/utils"
 )
 
 // Init app init
@@ -76,10 +75,21 @@ func GetKey(sessionFile string) string {
 		}
 	}
 	//write a new key
-	key := fmt.Sprintf("%d-%s", time.Now().Unix(), utils.RandString(64))
+	key := fmt.Sprintf("%d-%s", time.Now().Unix(), randString(64))
 	n, _ := file.WriteString(sessionFile, key)
 	if n != len(key) {
 		return ""
 	}
 	return key
+}
+
+func randString(slen int) string {
+	str := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	bt := []byte(str)
+	result := make([]byte, 0)
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	for i := 0; i < slen; i++ {
+		result = append(result, bt[r.Intn(len(bt))])
+	}
+	return string(result)
 }

@@ -2,13 +2,27 @@ package binlog
 
 import (
 	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 
-	"github.com/mia0x75/copycat/utils/path"
 	log "github.com/sirupsen/logrus"
 	"github.com/toolkits/file"
 )
+
+// GetCurrentPath get current path
+func GetCurrentPath() string {
+	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		log.Errorf("[E] %s", err.Error())
+		return ""
+	}
+	return strings.Replace(dir, "\\", "/", -1)
+}
+
+// CurrentPath current path
+var CurrentPath = GetCurrentPath()
 
 func init() {
 	log.SetFormatter(&log.TextFormatter{
@@ -29,11 +43,11 @@ func TestBinlogHandler_SaveBinlogPostionCache(t *testing.T) {
 	}
 	var err error
 	flag := os.O_RDWR | os.O_CREATE | os.O_SYNC
-	h.cacheHandler, err = os.OpenFile(path.CurrentPath+"/cache_test.pos", flag, 0755)
+	h.cacheHandler, err = os.OpenFile(CurrentPath+"/cache_test.pos", flag, 0755)
 	if err != nil {
 		t.Errorf("binlog open cache file error: %+v", err)
 	}
-	defer file.Remove(path.CurrentPath + "/cache_test.pos")
+	defer file.Remove(CurrentPath + "/cache_test.pos")
 
 	binfile := "mysql-bin.000059"
 	pos := int64(123456)
